@@ -24,17 +24,17 @@ export default function StatsCard({ title, value, previousValue }) {
   const change = calculateChange();
 
   return (
-    <div className="bg-white/5 backdrop-blur-xl rounded-2xl p-6 relative overflow-hidden group transition-all duration-300 hover:bg-white/10 border border-white/10">
+    <div className="bg-white/5 backdrop-blur-xl rounded-2xl p-4 sm:p-6 relative overflow-hidden group transition-all duration-300 hover:bg-white/10 border border-white/10">
       <div className="absolute inset-0 bg-gradient-to-br from-white/[0.05] to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
       
       <div className="relative z-10">
-        <h3 className="text-gray-400 text-sm font-medium mb-3 tracking-wide">{title}</h3>
+        <h3 className="text-gray-400 text-xs sm:text-sm font-medium mb-2 sm:mb-3 tracking-wide">{title}</h3>
         <div className="space-y-1">
-          <span className="text-white text-3xl font-semibold tracking-tight block">
+          <span className="text-white text-xl sm:text-3xl font-semibold tracking-tight block">
             {value}
           </span>
           {change && (
-            <span className={`text-sm font-medium ${change.isPositive ? 'text-green-400' : change.isNegative ? 'text-red-400' : 'text-gray-400'}`}>
+            <span className={`text-xs sm:text-sm font-medium ${change.isPositive ? 'text-green-400' : change.isNegative ? 'text-red-400' : 'text-gray-400'}`}>
               {change.isPositive ? '↑' : '↓'} {change.value} {title.includes('Weight') ? 'kg' : 'cm'}
             </span>
           )}
