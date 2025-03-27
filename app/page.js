@@ -1,103 +1,357 @@
-import Image from "next/image";
+// app/page.js
+"use client";
+import { useState, useEffect } from "react";
+import StatsCard from "@/components/StatsCard";
+import ProgressChart from "@/components/ProgressChart";
+import MeasurementForm from "@/components/MeasurementForm";
+import LoadingSkeleton from "@/components/LoadingSkeleton";
 
 export default function Home() {
-  return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm/6 text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-[family-name:var(--font-geist-mono)] font-semibold">
-              app/page.js
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+  const [measurements, setMeasurements] = useState([]);
+  const [showForm, setShowForm] = useState(false);
+  const [activeTab, setActiveTab] = useState("chart");
+  const [editingMeasurement, setEditingMeasurement] = useState(null);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [measurementToDelete, setMeasurementToDelete] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const latest = measurements[measurements.length - 1] || {};
+  const previous = measurements[measurements.length - 2] || {};
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+  // Format height in cm
+  const formatHeight = (heightCm) => {
+    if (!heightCm) return "- cm";
+    return `${heightCm.toFixed(1)} cm`;
+  };
+
+  // Convert lbs to kg
+  const formatWeight = (weightLbs) => {
+    if (!weightLbs) return "-";
+    return (Number(weightLbs) * 0.453592).toFixed(1);
+  };
+
+  // Get numeric weight in kg
+  const getWeightInKg = (weightLbs) => {
+    if (!weightLbs) return null;
+    return Number(weightLbs) * 0.453592;
+  };
+
+  // Calculate average biceps
+  const getAverageBiceps = (measurement) => {
+    if (!measurement?.leftBicep || !measurement?.rightBicep) return null;
+    return ((Number(measurement.leftBicep) + Number(measurement.rightBicep)) / 2).toFixed(1);
+  };
+
+  // Calculate average thighs
+  const getAverageThighs = (measurement) => {
+    if (!measurement?.leftThigh || !measurement?.rightThigh) return null;
+    return ((Number(measurement.leftThigh) + Number(measurement.rightThigh)) / 2).toFixed(1);
+  };
+
+  // Calculate average calves
+  const getAverageCalves = (measurement) => {
+    if (!measurement?.leftCalf || !measurement?.rightCalf) return null;
+    return ((Number(measurement.leftCalf) + Number(measurement.rightCalf)) / 2).toFixed(1);
+  };
+
+  useEffect(() => {
+    fetchData();
+  }, []);
+
+  const fetchData = async () => {
+    try {
+      setIsLoading(true);
+      const response = await fetch("/api/measurements");
+      const data = await response.json();
+      setMeasurements(data);
+    } catch (error) {
+      console.error("Error fetching data:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleEdit = (measurement) => {
+    setEditingMeasurement(measurement);
+    setShowForm(true);
+  };
+
+  const handleDelete = async (measurement) => {
+    try {
+      const response = await fetch(`/api/measurements?id=${measurement._id}`, {
+        method: "DELETE",
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to delete measurement");
+      }
+
+      fetchData();
+      setShowDeleteConfirm(false);
+      setMeasurementToDelete(null);
+    } catch (error) {
+      console.error("Error deleting measurement:", error);
+    }
+  };
+
+  const handleFormClose = () => {
+    setShowForm(false);
+    setEditingMeasurement(null);
+  };
+
+  return (
+    <div className="min-h-screen bg-black text-white p-6 overflow-x-hidden">
+      <div className="max-w-6xl mx-auto space-y-8">
+        <div className="space-y-2">
+          <h1 className="text-6xl font-black tracking-tight text-white">
+            GIRTHOS
+          </h1>
+          <p className="text-gray-400 text-sm font-medium tracking-wide">
+            Track your girth
+          </p>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+
+        {/* Content */}
+        {isLoading ? (
+          <LoadingSkeleton />
+        ) : (
+          <>
+            {/* Stats Grid */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <StatsCard
+                title="Current Weight"
+                value={`${formatWeight(latest.weight) || "-"} kg`}
+                previousValue={getWeightInKg(previous.weight)}
+              />
+              <StatsCard
+                title="Current Height"
+                value={formatHeight(latest.height)}
+                previousValue={previous.height}
+              />
+              <StatsCard
+                title="Biceps"
+                value={`${getAverageBiceps(latest) || "-"} cm`}
+                previousValue={getAverageBiceps(previous)}
+              />
+              <StatsCard
+                title="Chest"
+                value={`${latest.chest || "-"} cm`}
+                previousValue={previous.chest}
+              />
+            </div>
+
+            {/* Add Measurement Button */}
+            <div className="flex justify-end">
+              <button
+                onClick={() => setShowForm(true)}
+                className="flex items-center gap-2 bg-white/10 hover:bg-white/20 text-white px-6 py-2.5 rounded-full 
+                         transition-colors duration-200 font-medium tracking-wide"
+              >
+                <span>+</span>
+                <span>Add Measurement</span>
+              </button>
+            </div>
+
+            {/* Tabs */}
+            <div className="flex gap-6 border-b border-white/10 mb-6">
+              <button
+                onClick={() => setActiveTab("chart")}
+                className={`pb-2 text-sm font-medium transition-colors duration-200 ${
+                  activeTab === "chart"
+                    ? "text-white border-b-2 border-blue-500"
+                    : "text-gray-400 hover:text-white"
+                }`}
+              >
+                <span className="flex items-center gap-2">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                    <path d="M2 11a1 1 0 011-1h2a1 1 0 011 1v5a1 1 0 01-1 1H3a1 1 0 01-1-1v-5zm6-4a1 1 0 011-1h2a1 1 0 011 1v9a1 1 0 01-1 1H9a1 1 0 01-1-1V7zm6-3a1 1 0 011-1h2a1 1 0 011 1v12a1 1 0 01-1 1h-2a1 1 0 01-1-1V4z" />
+                  </svg>
+                  Charts
+                </span>
+              </button>
+              <button
+                onClick={() => setActiveTab("history")}
+                className={`pb-2 text-sm font-medium transition-colors duration-200 ${
+                  activeTab === "history"
+                    ? "text-white border-b-2 border-blue-500"
+                    : "text-gray-400 hover:text-white"
+                }`}
+              >
+                <span className="flex items-center gap-2">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clipRule="evenodd" />
+                  </svg>
+                  History
+                </span>
+              </button>
+            </div>
+
+            {/* Tab Content */}
+            <div className="bg-white/5 backdrop-blur-xl rounded-2xl p-6 border border-white/10">
+              {activeTab === "chart" ? (
+                <div>
+                  <h2 className="text-xl font-semibold mb-2 text-white tracking-tight">Progress Tracking</h2>
+                  <p className="text-gray-400 text-sm mb-6">Track your body measurements over time</p>
+                  <ProgressChart measurements={measurements} />
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <div className="mb-4">
+                    <h2 className="text-xl font-semibold text-white tracking-tight">
+                      Measurement History
+                    </h2>
+                  </div>
+
+                  <table className="w-full">
+                    <thead>
+                      <tr className="text-left border-b border-white/10">
+                        <th className="pb-3 text-sm font-medium text-gray-400">Date</th>
+                        <th className="pb-3 text-sm font-medium text-gray-400 text-center">Height</th>
+                        <th className="pb-3 text-sm font-medium text-gray-400 text-center">Weight</th>
+                        <th className="pb-3 text-sm font-medium text-gray-400 text-center">Chest</th>
+                        <th className="pb-3 text-sm font-medium text-gray-400 text-center">Biceps</th>
+                        <th className="pb-3 text-sm font-medium text-gray-400 text-center">Waist</th>
+                        <th className="pb-3 text-sm font-medium text-gray-400 text-center">Thighs</th>
+                        <th className="pb-3 text-sm font-medium text-gray-400 text-center">Calves</th>
+                        <th className="pb-3 text-sm font-medium text-gray-400 text-center">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {measurements
+                        .slice()
+                        .reverse()
+                        .map((m) => (
+                          <tr
+                            key={m._id}
+                            className="border-b border-white/10 hover:bg-white/5 transition-colors"
+                          >
+                            <td className="py-3 px-4 text-white text-sm">
+                              {new Date(m.date).toLocaleDateString()}
+                            </td>
+                            <td className="text-center py-3 px-4 text-white text-sm">
+                              {formatHeight(m.height)}
+                            </td>
+                            <td className="text-center py-3 px-4 text-white text-sm">
+                              {formatWeight(m.weight)}
+                            </td>
+                            <td className="text-center py-3 px-4 text-white text-sm">
+                              {m.chest ? (Number(m.chest) * 2.54).toFixed(1) : "-"}
+                            </td>
+                            <td className="text-center py-3 px-4 text-white text-sm">
+                              {m.leftBicep && m.rightBicep
+                                ? ((Number(m.leftBicep) + Number(m.rightBicep)) / 2 * 2.54).toFixed(1)
+                                : "-"}
+                            </td>
+                            <td className="text-center py-3 px-4 text-white text-sm">
+                              {m.waist ? (Number(m.waist) * 2.54).toFixed(1) : "-"}
+                            </td>
+                            <td className="text-center py-3 px-4 text-white text-sm">
+                              {m.leftThigh && m.rightThigh
+                                ? ((Number(m.leftThigh) + Number(m.rightThigh)) / 2 * 2.54).toFixed(1)
+                                : "-"}
+                            </td>
+                            <td className="text-center py-3 px-4 text-white text-sm">
+                              {m.leftCalf && m.rightCalf
+                                ? ((Number(m.leftCalf) + Number(m.rightCalf)) / 2 * 2.54).toFixed(1)
+                                : "-"}
+                            </td>
+                            <td className="text-center py-3 px-4 text-white text-sm">
+                              <div className="flex justify-center gap-2">
+                                <button
+                                  onClick={() => handleEdit(m)}
+                                  className="p-1 text-blue-500 hover:text-blue-400 transition-colors"
+                                  title="Edit"
+                                >
+                                  <svg
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    className="h-4 w-4"
+                                    fill="none"
+                                    viewBox="0 0 24 24"
+                                    stroke="currentColor"
+                                  >
+                                    <path
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                      strokeWidth={2}
+                                      d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                                    />
+                                  </svg>
+                                </button>
+                                <button
+                                  onClick={() => {
+                                    setMeasurementToDelete(m);
+                                    setShowDeleteConfirm(true);
+                                  }}
+                                  className="p-1 text-red-500 hover:text-red-400 transition-colors"
+                                  title="Delete"
+                                >
+                                  <svg
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    className="h-4 w-4"
+                                    fill="none"
+                                    viewBox="0 0 24 24"
+                                    stroke="currentColor"
+                                  >
+                                    <path
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                      strokeWidth={2}
+                                      d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                                    />
+                                  </svg>
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          </>
+        )}
+      </div>
+
+      {/* Measurement Form Modal */}
+      {showForm && (
+        <MeasurementForm
+          show={showForm}
+          onClose={handleFormClose}
+          onSuccess={fetchData}
+          measurement={editingMeasurement}
+        />
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center p-4 z-50">
+          <div className="bg-white/5 backdrop-blur-xl rounded-2xl p-6 max-w-md w-full border border-white/10">
+            <h2 className="text-xl font-semibold text-white mb-4">Delete Measurement</h2>
+            <p className="text-gray-400 mb-6">
+              Are you sure you want to delete this measurement? This action cannot be undone.
+            </p>
+            <div className="flex justify-end gap-4">
+              <button
+                onClick={() => {
+                  setShowDeleteConfirm(false);
+                  setMeasurementToDelete(null);
+                }}
+                className="px-6 py-2.5 text-sm text-white/90 rounded-full bg-white/10 hover:bg-white/20 
+                         transition-colors duration-200 font-medium tracking-wide"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => handleDelete(measurementToDelete)}
+                className="px-6 py-2.5 text-sm text-white rounded-full bg-red-500 hover:bg-red-600 
+                         transition-colors duration-200 font-medium tracking-wide"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
