@@ -54,83 +54,128 @@ export default function ProgressChart({ measurements }) {
       }
     },
     grid: {
+      show: true,
       borderColor: "rgba(255, 255, 255, 0.08)",
       strokeDashArray: 0,
-      opacity: 0.2,
+      position: 'back',
+      xaxis: {
+        lines: {
+          show: true
+        }
+      },
+      yaxis: {
+        lines: {
+          show: true
+        }
+      },
+      padding: {
+        top: 0,
+        right: 20,
+        bottom: 0,
+        left: 20
+      }
     },
     xaxis: {
       type: "datetime",
       labels: { 
+        show: true,
         style: { 
           colors: "rgba(255, 255, 255, 0.5)",
           fontFamily: "SF Pro Display, -apple-system, system-ui, sans-serif",
-          fontSize: '12px',
+          fontSize: '10px',
         },
         datetimeFormatter: {
           year: 'yyyy',
           month: "MMM 'yy",
           day: 'dd MMM',
-        }
+        },
+        rotate: 0,
+        offsetY: 0
       },
       axisBorder: {
+        show: true,
         color: "rgba(255, 255, 255, 0.08)"
       },
       axisTicks: {
+        show: true,
         color: "rgba(255, 255, 255, 0.08)"
       },
+      crosshairs: {
+        show: true,
+        stroke: {
+          color: "rgba(255, 255, 255, 0.2)",
+          width: 1,
+          dashArray: 0
+        }
+      }
     },
     yaxis: {
+      show: true,
       title: { 
         text: "Measurements (cm)",
         style: { 
           color: "rgba(255, 255, 255, 0.5)",
           fontFamily: "SF Pro Display, -apple-system, system-ui, sans-serif",
-          fontSize: "13px",
+          fontSize: "11px",
           fontWeight: 500
         }
       },
       labels: { 
+        show: true,
         style: { 
           colors: "rgba(255, 255, 255, 0.5)",
           fontFamily: "SF Pro Display, -apple-system, system-ui, sans-serif",
-          fontSize: '12px',
+          fontSize: '10px',
         },
         formatter: (value) => value.toFixed(1)
       },
       axisBorder: {
+        show: true,
         color: "rgba(255, 255, 255, 0.08)"
       },
       axisTicks: {
+        show: true,
         color: "rgba(255, 255, 255, 0.08)"
       },
       floating: false,
       min: (min) => Math.floor(min - 1),
       max: (max) => Math.ceil(max + 1),
-      tickAmount: 8,
+      tickAmount: 5,
       forceNiceScale: true,
     },
     tooltip: {
+      enabled: true,
       theme: "dark",
       x: {
         format: 'dd MMM yyyy'
       },
       style: {
-        fontSize: '12px',
+        fontSize: '11px',
         fontFamily: "SF Pro Display, -apple-system, system-ui, sans-serif",
       },
       shared: true,
       intersect: false,
       y: {
         formatter: (value) => value ? `${value.toFixed(1)} cm` : '-'
-      }
+      },
+      marker: {
+        show: true
+      },
+      fixed: {
+        enabled: false,
+        position: 'topRight',
+        offsetX: 0,
+        offsetY: 0,
+      },
     },
-    colors: ["#30D158", "#0A84FF", "#BF5AF2", "#FF9F0A", "#FF453A", "#FF375F"],
+    colors: ["#30D158", "#0A84FF", "#BF5AF2", "#FF9F0A", "#FF453A"],
     stroke: { 
       curve: "smooth",
       width: 2.5,
       lineCap: 'round',
     },
     legend: {
+      show: true,
       position: "top",
       horizontalAlign: "left",
       labels: {
@@ -138,9 +183,10 @@ export default function ProgressChart({ measurements }) {
         useSeriesColors: false
       },
       fontFamily: "SF Pro Display, -apple-system, system-ui, sans-serif",
-      fontSize: '13px',
+      fontSize: '11px',
       itemMargin: { 
-        horizontal: 16
+        horizontal: 12,
+        vertical: 8
       },
       onItemClick: {
         toggleDataSeries: true
@@ -150,13 +196,45 @@ export default function ProgressChart({ measurements }) {
       }
     },
     markers: {
-      size: 5,
+      size: 4,
       strokeWidth: 0,
       hover: {
-        size: 7,
-        sizeOffset: 3
+        size: 6,
+        sizeOffset: 2
       }
     },
+    theme: {
+      mode: 'dark',
+      palette: 'palette1'
+    },
+    responsive: [{
+      breakpoint: 480,
+      options: {
+        chart: {
+          height: 250
+        },
+        legend: {
+          position: "bottom",
+          horizontalAlign: "center",
+          offsetY: 7,
+          itemMargin: {
+            horizontal: 8,
+            vertical: 8
+          }
+        },
+        yaxis: {
+          labels: {
+            offsetX: -10
+          }
+        },
+        grid: {
+          padding: {
+            right: 10,
+            left: 10
+          }
+        }
+      }
+    }]
   };
 
   const chartSeries = [
@@ -226,12 +304,12 @@ export default function ProgressChart({ measurements }) {
   }, [measurements]);
 
   return (
-    <div className="bg-white/5 backdrop-blur-xl rounded-2xl p-6 border border-white/10">
-      <div className="flex justify-end mb-6">
+    <div className="bg-black/40 backdrop-blur-xl rounded-2xl p-4 sm:p-6 border border-white/10">
+      <div className="flex justify-end mb-4 sm:mb-6">
         <button
           onClick={handleToggleAll}
           disabled={measurements.length === 0}
-          className="px-4 py-2 text-sm text-white/90 rounded-full bg-white/10 hover:bg-white/20 
+          className="px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm text-white/90 rounded-full bg-white/10 hover:bg-white/20 
                    transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed
                    font-medium tracking-wide"
         >
@@ -241,20 +319,22 @@ export default function ProgressChart({ measurements }) {
 
       {measurements.length > 0 ? (
         <div className="relative">
-          <Chart
-            options={chartOptions}
-            series={chartSeries}
-            type="line"
-            height={400}
-          />
-          <div className="mt-6 text-sm text-gray-400 text-center font-light">
-            *Bilateral measurements show average of left/right sides
+          <div className="chart-container">
+            <Chart
+              options={chartOptions}
+              series={chartSeries}
+              type="line"
+              height={300}
+            />
+          </div>
+          <div className="mt-4 sm:mt-6 text-xs sm:text-sm text-gray-400 text-center font-light">
+            Tap on the chart to see detailed measurements
           </div>
         </div>
       ) : (
-        <p className="text-gray-400 text-center py-8 font-light">
-          No measurements recorded yet
-        </p>
+        <div className="text-center py-8 text-gray-400">
+          No measurements yet. Add your first measurement to see the chart.
+        </div>
       )}
     </div>
   );
