@@ -99,10 +99,10 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen bg-black text-white p-6 overflow-x-hidden">
-      <div className="max-w-6xl mx-auto space-y-8">
+    <div className="min-h-screen bg-black text-white p-4 sm:p-6 overflow-x-hidden">
+      <div className="max-w-6xl mx-auto space-y-6 sm:space-y-8">
         <div className="space-y-2">
-          <h1 className="text-6xl font-black tracking-tight text-white">
+          <h1 className="text-4xl sm:text-6xl font-black tracking-tight text-white">
             GIRTHOS
           </h1>
           <p className="text-gray-400 text-sm font-medium tracking-wide">
@@ -116,7 +116,7 @@ export default function Home() {
         ) : (
           <>
             {/* Stats Grid */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               <StatsCard
                 title="Current Weight"
                 value={`${formatWeight(latest.weight) || "-"} kg`}
@@ -143,8 +143,8 @@ export default function Home() {
             <div className="flex justify-end">
               <button
                 onClick={() => setShowForm(true)}
-                className="flex items-center gap-2 bg-white/10 hover:bg-white/20 text-white px-6 py-2.5 rounded-full 
-                         transition-colors duration-200 font-medium tracking-wide"
+                className="flex items-center gap-2 bg-white/10 hover:bg-white/20 text-white px-4 sm:px-6 py-2.5 rounded-full 
+                         transition-colors duration-200 font-medium tracking-wide text-sm sm:text-base"
               >
                 <span>+</span>
                 <span>Add Measurement</span>
@@ -152,10 +152,10 @@ export default function Home() {
             </div>
 
             {/* Tabs */}
-            <div className="flex gap-6 border-b border-white/10 mb-6">
+            <div className="flex gap-4 sm:gap-6 border-b border-white/10 mb-4 sm:mb-6 overflow-x-auto">
               <button
                 onClick={() => setActiveTab("chart")}
-                className={`pb-2 text-sm font-medium transition-colors duration-200 ${
+                className={`pb-2 text-sm font-medium transition-colors duration-200 whitespace-nowrap ${
                   activeTab === "chart"
                     ? "text-white border-b-2 border-blue-500"
                     : "text-gray-400 hover:text-white"
@@ -170,7 +170,7 @@ export default function Home() {
               </button>
               <button
                 onClick={() => setActiveTab("history")}
-                className={`pb-2 text-sm font-medium transition-colors duration-200 ${
+                className={`pb-2 text-sm font-medium transition-colors duration-200 whitespace-nowrap ${
                   activeTab === "history"
                     ? "text-white border-b-2 border-blue-500"
                     : "text-gray-400 hover:text-white"
@@ -186,125 +186,103 @@ export default function Home() {
             </div>
 
             {/* Tab Content */}
-            <div className="bg-white/5 backdrop-blur-xl rounded-2xl p-6 border border-white/10">
+            <div className="bg-white/5 backdrop-blur-xl rounded-2xl p-4 sm:p-6 border border-white/10">
               {activeTab === "chart" ? (
                 <div>
-                  <h2 className="text-xl font-semibold mb-2 text-white tracking-tight">Progress Tracking</h2>
-                  <p className="text-gray-400 text-sm mb-6">Track your body measurements over time</p>
+                  <h2 className="text-lg sm:text-xl font-semibold mb-2 text-white tracking-tight">Progress Tracking</h2>
+                  <p className="text-gray-400 text-sm mb-4 sm:mb-6">Track your body measurements over time</p>
                   <ProgressChart measurements={measurements} />
                 </div>
               ) : (
                 <div className="overflow-x-auto">
                   <div className="mb-4">
-                    <h2 className="text-xl font-semibold text-white tracking-tight">
+                    <h2 className="text-lg sm:text-xl font-semibold text-white tracking-tight">
                       Measurement History
                     </h2>
                   </div>
 
-                  <table className="w-full">
-                    <thead>
-                      <tr className="text-left border-b border-white/10">
-                        <th className="pb-3 text-sm font-medium text-gray-400">Date</th>
-                        <th className="pb-3 text-sm font-medium text-gray-400 text-center">Height</th>
-                        <th className="pb-3 text-sm font-medium text-gray-400 text-center">Weight</th>
-                        <th className="pb-3 text-sm font-medium text-gray-400 text-center">Chest</th>
-                        <th className="pb-3 text-sm font-medium text-gray-400 text-center">Biceps</th>
-                        <th className="pb-3 text-sm font-medium text-gray-400 text-center">Waist</th>
-                        <th className="pb-3 text-sm font-medium text-gray-400 text-center">Thighs</th>
-                        <th className="pb-3 text-sm font-medium text-gray-400 text-center">Calves</th>
-                        <th className="pb-3 text-sm font-medium text-gray-400 text-center">Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {measurements
-                        .slice()
-                        .reverse()
-                        .map((m) => (
-                          <tr
-                            key={m._id}
-                            className="border-b border-white/10 hover:bg-white/5 transition-colors"
-                          >
-                            <td className="py-3 px-4 text-white text-sm">
-                              {new Date(m.date).toLocaleDateString()}
-                            </td>
-                            <td className="text-center py-3 px-4 text-white text-sm">
-                              {formatHeight(m.height)}
-                            </td>
-                            <td className="text-center py-3 px-4 text-white text-sm">
-                              {formatWeight(m.weight)}
-                            </td>
-                            <td className="text-center py-3 px-4 text-white text-sm">
-                              {m.chest ? (Number(m.chest) * 2.54).toFixed(1) : "-"}
-                            </td>
-                            <td className="text-center py-3 px-4 text-white text-sm">
-                              {m.leftBicep && m.rightBicep
-                                ? ((Number(m.leftBicep) + Number(m.rightBicep)) / 2 * 2.54).toFixed(1)
-                                : "-"}
-                            </td>
-                            <td className="text-center py-3 px-4 text-white text-sm">
-                              {m.waist ? (Number(m.waist) * 2.54).toFixed(1) : "-"}
-                            </td>
-                            <td className="text-center py-3 px-4 text-white text-sm">
-                              {m.leftThigh && m.rightThigh
-                                ? ((Number(m.leftThigh) + Number(m.rightThigh)) / 2 * 2.54).toFixed(1)
-                                : "-"}
-                            </td>
-                            <td className="text-center py-3 px-4 text-white text-sm">
-                              {m.leftCalf && m.rightCalf
-                                ? ((Number(m.leftCalf) + Number(m.rightCalf)) / 2 * 2.54).toFixed(1)
-                                : "-"}
-                            </td>
-                            <td className="text-center py-3 px-4 text-white text-sm">
-                              <div className="flex justify-center gap-2">
-                                <button
-                                  onClick={() => handleEdit(m)}
-                                  className="p-1 text-blue-500 hover:text-blue-400 transition-colors"
-                                  title="Edit"
-                                >
-                                  <svg
-                                    xmlns="http://www.w3.org/2000/svg"
-                                    className="h-4 w-4"
-                                    fill="none"
-                                    viewBox="0 0 24 24"
-                                    stroke="currentColor"
+                  <div className="overflow-x-auto">
+                    <table className="w-full min-w-[800px]">
+                      <thead>
+                        <tr className="text-left border-b border-white/10">
+                          <th className="pb-3 text-sm font-medium text-gray-400">Date</th>
+                          <th className="pb-3 text-sm font-medium text-gray-400 text-center">Height</th>
+                          <th className="pb-3 text-sm font-medium text-gray-400 text-center">Weight</th>
+                          <th className="pb-3 text-sm font-medium text-gray-400 text-center">Chest</th>
+                          <th className="pb-3 text-sm font-medium text-gray-400 text-center">Biceps</th>
+                          <th className="pb-3 text-sm font-medium text-gray-400 text-center">Waist</th>
+                          <th className="pb-3 text-sm font-medium text-gray-400 text-center">Thighs</th>
+                          <th className="pb-3 text-sm font-medium text-gray-400 text-center">Calves</th>
+                          <th className="pb-3 text-sm font-medium text-gray-400 text-center">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {measurements
+                          .slice()
+                          .reverse()
+                          .map((m) => (
+                            <tr
+                              key={m._id}
+                              className="border-b border-white/10 hover:bg-white/5 transition-colors"
+                            >
+                              <td className="py-3 px-4 text-white text-sm">
+                                {new Date(m.date).toLocaleDateString()}
+                              </td>
+                              <td className="text-center py-3 px-4 text-white text-sm">
+                                {formatHeight(m.height)}
+                              </td>
+                              <td className="text-center py-3 px-4 text-white text-sm">
+                                {formatWeight(m.weight)}
+                              </td>
+                              <td className="text-center py-3 px-4 text-white text-sm">
+                                {m.chest ? (Number(m.chest) * 2.54).toFixed(1) : "-"}
+                              </td>
+                              <td className="text-center py-3 px-4 text-white text-sm">
+                                {m.leftBicep && m.rightBicep
+                                  ? ((Number(m.leftBicep) + Number(m.rightBicep)) / 2 * 2.54).toFixed(1)
+                                  : "-"}
+                              </td>
+                              <td className="text-center py-3 px-4 text-white text-sm">
+                                {m.waist ? (Number(m.waist) * 2.54).toFixed(1) : "-"}
+                              </td>
+                              <td className="text-center py-3 px-4 text-white text-sm">
+                                {m.leftThigh && m.rightThigh
+                                  ? ((Number(m.leftThigh) + Number(m.rightThigh)) / 2 * 2.54).toFixed(1)
+                                  : "-"}
+                              </td>
+                              <td className="text-center py-3 px-4 text-white text-sm">
+                                {m.leftCalf && m.rightCalf
+                                  ? ((Number(m.leftCalf) + Number(m.rightCalf)) / 2 * 2.54).toFixed(1)
+                                  : "-"}
+                              </td>
+                              <td className="text-center py-3 px-4 text-white text-sm">
+                                <div className="flex items-center justify-center gap-2">
+                                  <button
+                                    onClick={() => handleEdit(m)}
+                                    className="p-1.5 text-gray-400 hover:text-white transition-colors rounded-full hover:bg-white/10"
                                   >
-                                    <path
-                                      strokeLinecap="round"
-                                      strokeLinejoin="round"
-                                      strokeWidth={2}
-                                      d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
-                                    />
-                                  </svg>
-                                </button>
-                                <button
-                                  onClick={() => {
-                                    setMeasurementToDelete(m);
-                                    setShowDeleteConfirm(true);
-                                  }}
-                                  className="p-1 text-red-500 hover:text-red-400 transition-colors"
-                                  title="Delete"
-                                >
-                                  <svg
-                                    xmlns="http://www.w3.org/2000/svg"
-                                    className="h-4 w-4"
-                                    fill="none"
-                                    viewBox="0 0 24 24"
-                                    stroke="currentColor"
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                                      <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
+                                    </svg>
+                                  </button>
+                                  <button
+                                    onClick={() => {
+                                      setMeasurementToDelete(m);
+                                      setShowDeleteConfirm(true);
+                                    }}
+                                    className="p-1.5 text-gray-400 hover:text-red-400 transition-colors rounded-full hover:bg-white/10"
                                   >
-                                    <path
-                                      strokeLinecap="round"
-                                      strokeLinejoin="round"
-                                      strokeWidth={2}
-                                      d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                                    />
-                                  </svg>
-                                </button>
-                              </div>
-                            </td>
-                          </tr>
-                        ))}
-                    </tbody>
-                  </table>
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                                      <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
+                                    </svg>
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          ))}
+                      </tbody>
+                    </table>
+                  </div>
                 </div>
               )}
             </div>
