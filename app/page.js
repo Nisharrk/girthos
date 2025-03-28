@@ -209,7 +209,7 @@ export default function Home() {
             </div>
 
             {/* Tab Content */}
-            <div className="bg-white/5 sm:bg-black backdrop-blur-xl rounded-2xl p-4 sm:p-6 border border-white/10">
+            <div className="bg-black backdrop-blur-xl rounded-2xl p-4 sm:p-6 border border-white/10">
               {activeTab === "chart" ? (
                 <div>
                   <h2 className="text-lg sm:text-xl font-semibold mb-2 text-white tracking-tight">
