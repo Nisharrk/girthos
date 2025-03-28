@@ -5,6 +5,7 @@ import StatsCard from "@/components/StatsCard";
 import ProgressChart from "@/components/ProgressChart";
 import MeasurementForm from "@/components/MeasurementForm";
 import LoadingSkeleton from "@/components/LoadingSkeleton";
+import ApiKeyPrompt from "@/components/ApiKeyPrompt";
 
 export default function Home() {
   const [measurements, setMeasurements] = useState([]);
@@ -14,6 +15,9 @@ export default function Home() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [measurementToDelete, setMeasurementToDelete] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [showApiKeyPrompt, setShowApiKeyPrompt] = useState(false);
+  const [pendingAction, setPendingAction] = useState(null);
+  const [apiKey, setApiKey] = useState("");
   const latest = measurements[measurements.length - 1] || {};
   const previous = measurements[measurements.length - 2] || {};
 
@@ -70,18 +74,42 @@ export default function Home() {
     }
   };
 
+  const handleApiKeyConfirm = (key) => {
+    setApiKey(key);
+    setShowApiKeyPrompt(false);
+    
+    if (pendingAction) {
+      if (pendingAction.type === 'delete') {
+        handleDelete(pendingAction.measurement);
+      } else if (pendingAction.type === 'edit') {
+        setEditingMeasurement(pendingAction.measurement);
+        setShowForm(true);
+      } else if (pendingAction.type === 'add') {
+        setShowForm(true);
+      }
+      setPendingAction(null);
+    }
+  };
+
   const handleEdit = (measurement) => {
-    setEditingMeasurement(measurement);
-    setShowForm(true);
+    setPendingAction({ type: 'edit', measurement });
+    setShowApiKeyPrompt(true);
   };
 
   const handleDelete = async (measurement) => {
     try {
       const response = await fetch(`/api/measurements?id=${measurement._id}`, {
         method: "DELETE",
+        headers: {
+          'x-api-key': apiKey
+        }
       });
 
       if (!response.ok) {
+        if (response.status === 401) {
+          setApiKey("");
+          throw new Error("Invalid API key");
+        }
         throw new Error("Failed to delete measurement");
       }
 
@@ -93,9 +121,20 @@ export default function Home() {
     }
   };
 
+  const handleAddMeasurement = () => {
+    setPendingAction({ type: 'add' });
+    setShowApiKeyPrompt(true);
+  };
+
   const handleFormClose = () => {
     setShowForm(false);
     setEditingMeasurement(null);
+  };
+
+  const handleDeleteClick = () => {
+    setPendingAction({ type: 'delete', measurement: measurementToDelete });
+    setShowApiKeyPrompt(true);
+    setShowDeleteConfirm(false);
   };
 
   return (
@@ -142,7 +181,7 @@ export default function Home() {
             {/* Add Measurement Button */}
             <div className="flex justify-end">
               <button
-                onClick={() => setShowForm(true)}
+                onClick={handleAddMeasurement}
                 className="flex items-center gap-2 bg-white/10 hover:bg-white/20 text-white px-4 sm:px-6 py-2.5 rounded-full 
                          transition-colors duration-200 font-medium tracking-wide text-sm sm:text-base"
               >
@@ -297,6 +336,7 @@ export default function Home() {
           onClose={handleFormClose}
           onSuccess={fetchData}
           measurement={editingMeasurement}
+          apiKey={apiKey}
         />
       )}
 
@@ -320,7 +360,7 @@ export default function Home() {
                 Cancel
               </button>
               <button
-                onClick={() => handleDelete(measurementToDelete)}
+                onClick={handleDeleteClick}
                 className="px-6 py-2.5 text-sm text-white rounded-full bg-red-500 hover:bg-red-600 
                          transition-colors duration-200 font-medium tracking-wide"
               >
@@ -330,6 +370,16 @@ export default function Home() {
           </div>
         </div>
       )}
+
+      {/* API Key Prompt */}
+      <ApiKeyPrompt
+        show={showApiKeyPrompt}
+        onClose={() => {
+          setShowApiKeyPrompt(false);
+          setPendingAction(null);
+        }}
+        onConfirm={handleApiKeyConfirm}
+      />
     </div>
   );
 }
