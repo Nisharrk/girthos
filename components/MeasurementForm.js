@@ -2,7 +2,7 @@
 "use client";
 import { useState, useEffect } from "react";
 
-export default function MeasurementForm({ show, onClose, onSuccess, measurement }) {
+export default function MeasurementForm({ show, onClose, onSuccess, measurement, apiKey }) {
   const [formData, setFormData] = useState({
     date: new Date().toISOString().split("T")[0],
     height: "",
@@ -161,11 +161,17 @@ export default function MeasurementForm({ show, onClose, onSuccess, measurement 
 
       const response = await fetch(url, {
         method,
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "x-api-key": apiKey
+        },
         body: JSON.stringify(body),
       });
 
       if (!response.ok) {
+        if (response.status === 401) {
+          throw new Error("Invalid API key");
+        }
         throw new Error("Failed to save measurement");
       }
 
