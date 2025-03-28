@@ -38,19 +38,28 @@ export default function Home() {
   // Calculate average biceps
   const getAverageBiceps = (measurement) => {
     if (!measurement?.leftBicep || !measurement?.rightBicep) return null;
-    return ((Number(measurement.leftBicep) + Number(measurement.rightBicep)) / 2).toFixed(1);
+    return (
+      (Number(measurement.leftBicep) + Number(measurement.rightBicep)) /
+      2
+    ).toFixed(1);
   };
 
   // Calculate average thighs
   const getAverageThighs = (measurement) => {
     if (!measurement?.leftThigh || !measurement?.rightThigh) return null;
-    return ((Number(measurement.leftThigh) + Number(measurement.rightThigh)) / 2).toFixed(1);
+    return (
+      (Number(measurement.leftThigh) + Number(measurement.rightThigh)) /
+      2
+    ).toFixed(1);
   };
 
   // Calculate average calves
   const getAverageCalves = (measurement) => {
     if (!measurement?.leftCalf || !measurement?.rightCalf) return null;
-    return ((Number(measurement.leftCalf) + Number(measurement.rightCalf)) / 2).toFixed(1);
+    return (
+      (Number(measurement.leftCalf) + Number(measurement.rightCalf)) /
+      2
+    ).toFixed(1);
   };
 
   useEffect(() => {
@@ -103,7 +112,7 @@ export default function Home() {
       <div className="max-w-6xl mx-auto space-y-6 sm:space-y-8">
         <div className="space-y-2">
           <h1 className="text-4xl sm:text-6xl font-black tracking-tight text-white">
-            GIRTHOS
+            girthOS
           </h1>
           <p className="text-gray-400 text-sm font-medium tracking-wide">
             Track your girth
@@ -162,7 +171,12 @@ export default function Home() {
                 }`}
               >
                 <span className="flex items-center gap-2">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-4 w-4"
+                    viewBox="0 0 20 20"
+                    fill="currentColor"
+                  >
                     <path d="M2 11a1 1 0 011-1h2a1 1 0 011 1v5a1 1 0 01-1 1H3a1 1 0 01-1-1v-5zm6-4a1 1 0 011-1h2a1 1 0 011 1v9a1 1 0 01-1 1H9a1 1 0 01-1-1V7zm6-3a1 1 0 011-1h2a1 1 0 011 1v12a1 1 0 01-1 1h-2a1 1 0 01-1-1V4z" />
                   </svg>
                   Charts
@@ -177,8 +191,17 @@ export default function Home() {
                 }`}
               >
                 <span className="flex items-center gap-2">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                    <path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clipRule="evenodd" />
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-4 w-4"
+                    viewBox="0 0 20 20"
+                    fill="currentColor"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z"
+                      clipRule="evenodd"
+                    />
                   </svg>
                   History
                 </span>
@@ -186,11 +209,15 @@ export default function Home() {
             </div>
 
             {/* Tab Content */}
-            <div className="bg-white/5 backdrop-blur-xl rounded-2xl p-4 sm:p-6 border border-white/10">
+            <div className="bg-black backdrop-blur-xl rounded-2xl p-4 sm:p-6 border border-white/10">
               {activeTab === "chart" ? (
                 <div>
-                  <h2 className="text-lg sm:text-xl font-semibold mb-2 text-white tracking-tight">Progress Tracking</h2>
-                  <p className="text-gray-400 text-sm mb-4 sm:mb-6">Track your body measurements over time</p>
+                  <h2 className="text-lg sm:text-xl font-semibold mb-2 text-white tracking-tight">
+                    Progress Tracking
+                  </h2>
+                  <p className="text-gray-400 text-sm mb-4 sm:mb-6">
+                    Track your body measurements over time
+                  </p>
                   <ProgressChart measurements={measurements} />
                 </div>
               ) : (
@@ -205,15 +232,33 @@ export default function Home() {
                     <table className="w-full min-w-[800px]">
                       <thead>
                         <tr className="text-left border-b border-white/10">
-                          <th className="pb-3 text-sm font-medium text-gray-400">Date</th>
-                          <th className="pb-3 text-sm font-medium text-gray-400 text-center">Height</th>
-                          <th className="pb-3 text-sm font-medium text-gray-400 text-center">Weight</th>
-                          <th className="pb-3 text-sm font-medium text-gray-400 text-center">Chest</th>
-                          <th className="pb-3 text-sm font-medium text-gray-400 text-center">Biceps</th>
-                          <th className="pb-3 text-sm font-medium text-gray-400 text-center">Waist</th>
-                          <th className="pb-3 text-sm font-medium text-gray-400 text-center">Thighs</th>
-                          <th className="pb-3 text-sm font-medium text-gray-400 text-center">Calves</th>
-                          <th className="pb-3 text-sm font-medium text-gray-400 text-center">Actions</th>
+                          <th className="pb-3 text-sm font-medium text-gray-400">
+                            Date
+                          </th>
+                          <th className="pb-3 text-sm font-medium text-gray-400 text-center">
+                            Height
+                          </th>
+                          <th className="pb-3 text-sm font-medium text-gray-400 text-center">
+                            Weight
+                          </th>
+                          <th className="pb-3 text-sm font-medium text-gray-400 text-center">
+                            Chest
+                          </th>
+                          <th className="pb-3 text-sm font-medium text-gray-400 text-center">
+                            Biceps
+                          </th>
+                          <th className="pb-3 text-sm font-medium text-gray-400 text-center">
+                            Waist
+                          </th>
+                          <th className="pb-3 text-sm font-medium text-gray-400 text-center">
+                            Thighs
+                          </th>
+                          <th className="pb-3 text-sm font-medium text-gray-400 text-center">
+                            Calves
+                          </th>
+                          <th className="pb-3 text-sm font-medium text-gray-400 text-center">
+                            Actions
+                          </th>
                         </tr>
                       </thead>
                       <tbody>
@@ -235,24 +280,43 @@ export default function Home() {
                                 {formatWeight(m.weight)}
                               </td>
                               <td className="text-center py-3 px-4 text-white text-sm">
-                                {m.chest ? (Number(m.chest) * 2.54).toFixed(1) : "-"}
-                              </td>
-                              <td className="text-center py-3 px-4 text-white text-sm">
-                                {m.leftBicep && m.rightBicep
-                                  ? ((Number(m.leftBicep) + Number(m.rightBicep)) / 2 * 2.54).toFixed(1)
+                                {m.chest
+                                  ? (Number(m.chest) * 2.54).toFixed(1)
                                   : "-"}
                               </td>
                               <td className="text-center py-3 px-4 text-white text-sm">
-                                {m.waist ? (Number(m.waist) * 2.54).toFixed(1) : "-"}
+                                {m.leftBicep && m.rightBicep
+                                  ? (
+                                      ((Number(m.leftBicep) +
+                                        Number(m.rightBicep)) /
+                                        2) *
+                                      2.54
+                                    ).toFixed(1)
+                                  : "-"}
+                              </td>
+                              <td className="text-center py-3 px-4 text-white text-sm">
+                                {m.waist
+                                  ? (Number(m.waist) * 2.54).toFixed(1)
+                                  : "-"}
                               </td>
                               <td className="text-center py-3 px-4 text-white text-sm">
                                 {m.leftThigh && m.rightThigh
-                                  ? ((Number(m.leftThigh) + Number(m.rightThigh)) / 2 * 2.54).toFixed(1)
+                                  ? (
+                                      ((Number(m.leftThigh) +
+                                        Number(m.rightThigh)) /
+                                        2) *
+                                      2.54
+                                    ).toFixed(1)
                                   : "-"}
                               </td>
                               <td className="text-center py-3 px-4 text-white text-sm">
                                 {m.leftCalf && m.rightCalf
-                                  ? ((Number(m.leftCalf) + Number(m.rightCalf)) / 2 * 2.54).toFixed(1)
+                                  ? (
+                                      ((Number(m.leftCalf) +
+                                        Number(m.rightCalf)) /
+                                        2) *
+                                      2.54
+                                    ).toFixed(1)
                                   : "-"}
                               </td>
                               <td className="text-center py-3 px-4 text-white text-sm">
@@ -261,7 +325,12 @@ export default function Home() {
                                     onClick={() => handleEdit(m)}
                                     className="p-1.5 text-gray-400 hover:text-white transition-colors rounded-full hover:bg-white/10"
                                   >
-                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                                    <svg
+                                      xmlns="http://www.w3.org/2000/svg"
+                                      className="h-4 w-4"
+                                      viewBox="0 0 20 20"
+                                      fill="currentColor"
+                                    >
                                       <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
                                     </svg>
                                   </button>
@@ -272,8 +341,17 @@ export default function Home() {
                                     }}
                                     className="p-1.5 text-gray-400 hover:text-red-400 transition-colors rounded-full hover:bg-white/10"
                                   >
-                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                                      <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
+                                    <svg
+                                      xmlns="http://www.w3.org/2000/svg"
+                                      className="h-4 w-4"
+                                      viewBox="0 0 20 20"
+                                      fill="currentColor"
+                                    >
+                                      <path
+                                        fillRule="evenodd"
+                                        d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z"
+                                        clipRule="evenodd"
+                                      />
                                     </svg>
                                   </button>
                                 </div>
@@ -304,9 +382,12 @@ export default function Home() {
       {showDeleteConfirm && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center p-4 z-50">
           <div className="bg-white/5 backdrop-blur-xl rounded-2xl p-6 max-w-md w-full border border-white/10">
-            <h2 className="text-xl font-semibold text-white mb-4">Delete Measurement</h2>
+            <h2 className="text-xl font-semibold text-white mb-4">
+              Delete Measurement
+            </h2>
             <p className="text-gray-400 mb-6">
-              Are you sure you want to delete this measurement? This action cannot be undone.
+              Are you sure you want to delete this measurement? This action
+              cannot be undone.
             </p>
             <div className="flex justify-end gap-4">
               <button

@@ -7,7 +7,9 @@ const Chart = dynamic(() => import("react-apexcharts"), { ssr: false });
 export default function ProgressChart({ measurements }) {
   const chartRef = useRef(null);
   const [allSeriesVisible, setAllSeriesVisible] = useState(true);
-  const [visibleSeries, setVisibleSeries] = useState(new Set(["Chest", "Biceps", "Waist", "Thighs", "Calves"]));
+  const [visibleSeries, setVisibleSeries] = useState(
+    new Set(["Chest", "Biceps", "Waist", "Thighs", "Calves"])
+  );
   const seriesNames = ["Chest", "Biceps", "Waist", "Thighs", "Calves"];
 
   const chartOptions = {
@@ -18,28 +20,28 @@ export default function ProgressChart({ measurements }) {
       background: "transparent",
       animations: {
         enabled: true,
-        easing: 'cubic-bezier(0.34, 1.56, 0.64, 1)',
+        easing: "cubic-bezier(0.34, 1.56, 0.64, 1)",
         speed: 1000,
         animateGradually: {
           enabled: true,
-          delay: 150
+          delay: 150,
         },
         dynamicAnimation: {
           enabled: true,
-          speed: 450
-        }
+          speed: 450,
+        },
       },
       events: {
-        mounted: function(chartContext) {
+        mounted: function (chartContext) {
           chartRef.current = chartContext;
         },
-        updated: function(chartContext) {
+        updated: function (chartContext) {
           chartRef.current = chartContext;
         },
-        legendClick: function(chartContext, seriesIndex, config) {
+        legendClick: function (chartContext, seriesIndex, config) {
           const seriesName = seriesNames[seriesIndex];
           const newVisibleSeries = new Set(visibleSeries);
-          
+
           if (newVisibleSeries.has(seriesName)) {
             newVisibleSeries.delete(seriesName);
             chartRef.current.hideSeries(seriesName);
@@ -47,95 +49,95 @@ export default function ProgressChart({ measurements }) {
             newVisibleSeries.add(seriesName);
             chartRef.current.showSeries(seriesName);
           }
-          
+
           setVisibleSeries(newVisibleSeries);
           setAllSeriesVisible(newVisibleSeries.size === seriesNames.length);
-        }
-      }
+        },
+      },
     },
     grid: {
       show: true,
       borderColor: "rgba(255, 255, 255, 0.08)",
       strokeDashArray: 0,
-      position: 'back',
+      position: "back",
       xaxis: {
         lines: {
-          show: true
-        }
+          show: true,
+        },
       },
       yaxis: {
         lines: {
-          show: true
-        }
+          show: true,
+        },
       },
       padding: {
         top: 0,
         right: 20,
         bottom: 0,
-        left: 20
-      }
+        left: 20,
+      },
     },
     xaxis: {
       type: "datetime",
-      labels: { 
+      labels: {
         show: true,
-        style: { 
+        style: {
           colors: "rgba(255, 255, 255, 0.5)",
           fontFamily: "SF Pro Display, -apple-system, system-ui, sans-serif",
-          fontSize: '10px',
+          fontSize: "10px",
         },
         datetimeFormatter: {
-          year: 'yyyy',
+          year: "yyyy",
           month: "MMM 'yy",
-          day: 'dd MMM',
+          day: "dd MMM",
         },
         rotate: 0,
-        offsetY: 0
+        offsetY: 0,
       },
       axisBorder: {
         show: true,
-        color: "rgba(255, 255, 255, 0.08)"
+        color: "rgba(255, 255, 255, 0.08)",
       },
       axisTicks: {
         show: true,
-        color: "rgba(255, 255, 255, 0.08)"
+        color: "rgba(255, 255, 255, 0.08)",
       },
       crosshairs: {
         show: true,
         stroke: {
           color: "rgba(255, 255, 255, 0.2)",
           width: 1,
-          dashArray: 0
-        }
-      }
+          dashArray: 0,
+        },
+      },
     },
     yaxis: {
       show: true,
-      title: { 
+      title: {
         text: "Measurements (cm)",
-        style: { 
+        style: {
           color: "rgba(255, 255, 255, 0.5)",
           fontFamily: "SF Pro Display, -apple-system, system-ui, sans-serif",
           fontSize: "11px",
-          fontWeight: 500
-        }
+          fontWeight: 500,
+        },
       },
-      labels: { 
+      labels: {
         show: true,
-        style: { 
+        style: {
           colors: "rgba(255, 255, 255, 0.5)",
           fontFamily: "SF Pro Display, -apple-system, system-ui, sans-serif",
-          fontSize: '10px',
+          fontSize: "10px",
         },
-        formatter: (value) => value.toFixed(1)
+        formatter: (value) => value.toFixed(1),
       },
       axisBorder: {
         show: true,
-        color: "rgba(255, 255, 255, 0.08)"
+        color: "rgba(255, 255, 255, 0.08)",
       },
       axisTicks: {
         show: true,
-        color: "rgba(255, 255, 255, 0.08)"
+        color: "rgba(255, 255, 255, 0.08)",
       },
       floating: false,
       min: (min) => Math.floor(min - 1),
@@ -147,32 +149,32 @@ export default function ProgressChart({ measurements }) {
       enabled: true,
       theme: "dark",
       x: {
-        format: 'dd MMM yyyy'
+        format: "dd MMM yyyy",
       },
       style: {
-        fontSize: '11px',
+        fontSize: "11px",
         fontFamily: "SF Pro Display, -apple-system, system-ui, sans-serif",
       },
       shared: true,
       intersect: false,
       y: {
-        formatter: (value) => value ? `${value.toFixed(1)} cm` : '-'
+        formatter: (value) => (value ? `${value.toFixed(1)} cm` : "-"),
       },
       marker: {
-        show: true
+        show: true,
       },
       fixed: {
         enabled: false,
-        position: 'topRight',
+        position: "topRight",
         offsetX: 0,
         offsetY: 0,
       },
     },
     colors: ["#30D158", "#0A84FF", "#BF5AF2", "#FF9F0A", "#FF453A"],
-    stroke: { 
+    stroke: {
       curve: "smooth",
       width: 2.5,
-      lineCap: 'round',
+      lineCap: "round",
     },
     legend: {
       show: true,
@@ -180,61 +182,64 @@ export default function ProgressChart({ measurements }) {
       horizontalAlign: "left",
       labels: {
         colors: "rgba(255, 255, 255, 0.5)",
-        useSeriesColors: false
+        useSeriesColors: false,
       },
       fontFamily: "SF Pro Display, -apple-system, system-ui, sans-serif",
-      fontSize: '11px',
-      itemMargin: { 
+      fontSize: "11px",
+      itemMargin: {
         horizontal: 12,
-        vertical: 8
+        vertical: 8,
       },
       onItemClick: {
-        toggleDataSeries: true
+        toggleDataSeries: true,
       },
       onItemHover: {
-        highlightDataSeries: true
-      }
+        highlightDataSeries: true,
+      },
     },
     markers: {
       size: 4,
       strokeWidth: 0,
       hover: {
         size: 6,
-        sizeOffset: 2
-      }
+        sizeOffset: 2,
+      },
     },
     theme: {
-      mode: 'dark',
-      palette: 'palette1'
+      mode: "dark",
+      palette: "palette1",
     },
-    responsive: [{
-      breakpoint: 480,
-      options: {
-        chart: {
-          height: 250
+    responsive: [
+      {
+        breakpoint: 480,
+        options: {
+          chart: {
+            height: 250,
+            background: "transparent",
+          },
+          legend: {
+            position: "bottom",
+            horizontalAlign: "center",
+            offsetY: 7,
+            itemMargin: {
+              horizontal: 8,
+              vertical: 8,
+            },
+          },
+          yaxis: {
+            labels: {
+              offsetX: -10,
+            },
+          },
+          grid: {
+            padding: {
+              right: 10,
+              left: 10,
+            },
+          },
         },
-        legend: {
-          position: "bottom",
-          horizontalAlign: "center",
-          offsetY: 7,
-          itemMargin: {
-            horizontal: 8,
-            vertical: 8
-          }
-        },
-        yaxis: {
-          labels: {
-            offsetX: -10
-          }
-        },
-        grid: {
-          padding: {
-            right: 10,
-            left: 10
-          }
-        }
-      }
-    }]
+      },
+    ],
   };
 
   const chartSeries = [

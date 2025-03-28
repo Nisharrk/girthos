@@ -7,14 +7,16 @@ const roboto = Roboto({
 });
 
 export const metadata = {
-  title: "Girthos - Body Measurement Tracker",
+  title: "girthos",
   description: "Track your girth",
 };
 
 export default function RootLayout({ children }) {
   return (
     <html lang="en">
-      <body className={`${roboto.variable} antialiased overflow-x-hidden`}>{children}</body>
+      <body className={`${roboto.variable} antialiased overflow-x-hidden`}>
+        {children}
+      </body>
     </html>
   );
 }
