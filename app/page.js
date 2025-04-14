@@ -27,16 +27,16 @@ export default function Home() {
     return `${heightCm.toFixed(1)} cm`;
   };
 
-  // Convert lbs to kg
-  const formatWeight = (weightLbs) => {
-    if (!weightLbs) return "-";
-    return (Number(weightLbs) * 0.453592).toFixed(1);
+  // Format weight in kg
+  const formatWeight = (weightKg) => {
+    if (!weightKg) return "-";
+    return `${weightKg.toFixed(1)} kg`;
   };
 
   // Get numeric weight in kg
-  const getWeightInKg = (weightLbs) => {
-    if (!weightLbs) return null;
-    return Number(weightLbs) * 0.453592;
+  const getWeightInKg = (weightKg) => {
+    if (!weightKg) return null;
+    return Number(weightKg);
   };
 
   // Calculate average biceps
@@ -319,43 +319,24 @@ export default function Home() {
                                 {formatWeight(m.weight)}
                               </td>
                               <td className="text-center py-3 px-4 text-white text-sm">
-                                {m.chest
-                                  ? (Number(m.chest) * 2.54).toFixed(1)
-                                  : "-"}
+                                {m.chest ? `${m.chest.toFixed(1)} cm` : "-"}
                               </td>
                               <td className="text-center py-3 px-4 text-white text-sm">
                                 {m.leftBicep && m.rightBicep
-                                  ? (
-                                      ((Number(m.leftBicep) +
-                                        Number(m.rightBicep)) /
-                                        2) *
-                                      2.54
-                                    ).toFixed(1)
+                                  ? `${getAverageBiceps(m)} cm`
                                   : "-"}
                               </td>
                               <td className="text-center py-3 px-4 text-white text-sm">
-                                {m.waist
-                                  ? (Number(m.waist) * 2.54).toFixed(1)
-                                  : "-"}
+                                {m.waist ? `${m.waist.toFixed(1)} cm` : "-"}
                               </td>
                               <td className="text-center py-3 px-4 text-white text-sm">
                                 {m.leftThigh && m.rightThigh
-                                  ? (
-                                      ((Number(m.leftThigh) +
-                                        Number(m.rightThigh)) /
-                                        2) *
-                                      2.54
-                                    ).toFixed(1)
+                                  ? `${getAverageThighs(m)} cm`
                                   : "-"}
                               </td>
                               <td className="text-center py-3 px-4 text-white text-sm">
                                 {m.leftCalf && m.rightCalf
-                                  ? (
-                                      ((Number(m.leftCalf) +
-                                        Number(m.rightCalf)) /
-                                        2) *
-                                      2.54
-                                    ).toFixed(1)
+                                  ? `${getAverageCalves(m)} cm`
                                   : "-"}
                               </td>
                               <td className="text-center py-3 px-4 text-white text-sm">
