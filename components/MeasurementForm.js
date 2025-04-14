@@ -22,30 +22,6 @@ export default function MeasurementForm({ show, onClose, onSuccess, measurement 
   const [isLoading, setIsLoading] = useState(false);
   const [validationErrors, setValidationErrors] = useState({});
 
-  // Convert lbs to kg
-  const lbsToKg = (lbs) => {
-    if (!lbs) return "";
-    return (Number(lbs) * 0.453592).toFixed(1);
-  };
-
-  // Convert kg to lbs
-  const kgToLbs = (kg) => {
-    if (!kg) return "";
-    return (Number(kg) / 0.453592).toFixed(1);
-  };
-
-  // Convert inches to cm
-  const inchesToCm = (inches) => {
-    if (!inches) return "";
-    return (Number(inches) * 2.54).toFixed(1);
-  };
-
-  // Convert cm to inches
-  const cmToInches = (cm) => {
-    if (!cm) return "";
-    return (Number(cm) / 2.54).toFixed(1);
-  };
-
   // Validate form data
   const validateForm = () => {
     const errors = {};
@@ -92,15 +68,15 @@ export default function MeasurementForm({ show, onClose, onSuccess, measurement 
       setFormData({
         date: new Date(measurement.date).toISOString().split("T")[0],
         height: measurement.height ? String(measurement.height) : "",
-        weight: measurement.weight ? lbsToKg(measurement.weight) : "",
-        chest: measurement.chest ? inchesToCm(measurement.chest) : "",
-        leftBicep: measurement.leftBicep ? inchesToCm(measurement.leftBicep) : "",
-        rightBicep: measurement.rightBicep ? inchesToCm(measurement.rightBicep) : "",
-        waist: measurement.waist ? inchesToCm(measurement.waist) : "",
-        leftThigh: measurement.leftThigh ? inchesToCm(measurement.leftThigh) : "",
-        rightThigh: measurement.rightThigh ? inchesToCm(measurement.rightThigh) : "",
-        leftCalf: measurement.leftCalf ? inchesToCm(measurement.leftCalf) : "",
-        rightCalf: measurement.rightCalf ? inchesToCm(measurement.rightCalf) : "",
+        weight: measurement.weight ? String(measurement.weight) : "",
+        chest: measurement.chest ? String(measurement.chest) : "",
+        leftBicep: measurement.leftBicep ? String(measurement.leftBicep) : "",
+        rightBicep: measurement.rightBicep ? String(measurement.rightBicep) : "",
+        waist: measurement.waist ? String(measurement.waist) : "",
+        leftThigh: measurement.leftThigh ? String(measurement.leftThigh) : "",
+        rightThigh: measurement.rightThigh ? String(measurement.rightThigh) : "",
+        leftCalf: measurement.leftCalf ? String(measurement.leftCalf) : "",
+        rightCalf: measurement.rightCalf ? String(measurement.rightCalf) : "",
       });
     } else {
       const savedHeight = localStorage.getItem("userHeight");
@@ -129,28 +105,17 @@ export default function MeasurementForm({ show, onClose, onSuccess, measurement 
     setError("");
 
     try {
-      // Convert weight from kg to lbs and measurements from cm to inches before saving
-      const weightInLbs = kgToLbs(formData.weight);
-      const chestInInches = cmToInches(formData.chest);
-      const leftBicepInInches = cmToInches(formData.leftBicep);
-      const rightBicepInInches = cmToInches(formData.rightBicep);
-      const waistInInches = cmToInches(formData.waist);
-      const leftThighInInches = cmToInches(formData.leftThigh);
-      const rightThighInInches = cmToInches(formData.rightThigh);
-      const leftCalfInInches = cmToInches(formData.leftCalf);
-      const rightCalfInInches = cmToInches(formData.rightCalf);
-
       const dataToSubmit = {
         ...formData,
-        weight: weightInLbs,
-        chest: chestInInches,
-        leftBicep: leftBicepInInches,
-        rightBicep: rightBicepInInches,
-        waist: waistInInches,
-        leftThigh: leftThighInInches,
-        rightThigh: rightThighInInches,
-        leftCalf: leftCalfInInches,
-        rightCalf: rightCalfInInches,
+        weight: Number(formData.weight),
+        chest: formData.chest ? Number(formData.chest) : null,
+        leftBicep: formData.leftBicep ? Number(formData.leftBicep) : null,
+        rightBicep: formData.rightBicep ? Number(formData.rightBicep) : null,
+        waist: formData.waist ? Number(formData.waist) : null,
+        leftThigh: formData.leftThigh ? Number(formData.leftThigh) : null,
+        rightThigh: formData.rightThigh ? Number(formData.rightThigh) : null,
+        leftCalf: formData.leftCalf ? Number(formData.leftCalf) : null,
+        rightCalf: formData.rightCalf ? Number(formData.rightCalf) : null,
       };
 
       const url = measurement
