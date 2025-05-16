@@ -86,14 +86,14 @@ export default function Home() {
   const handleApiKeyConfirm = (key) => {
     setApiKey(key);
     setShowApiKeyPrompt(false);
-    
+
     if (pendingAction) {
-      if (pendingAction.type === 'delete') {
+      if (pendingAction.type === "delete") {
         handleDelete(pendingAction.measurement);
-      } else if (pendingAction.type === 'edit') {
+      } else if (pendingAction.type === "edit") {
         setEditingMeasurement(pendingAction.measurement);
         setShowForm(true);
-      } else if (pendingAction.type === 'add') {
+      } else if (pendingAction.type === "add") {
         setShowForm(true);
       }
       setPendingAction(null);
@@ -101,7 +101,7 @@ export default function Home() {
   };
 
   const handleEdit = (measurement) => {
-    setPendingAction({ type: 'edit', measurement });
+    setPendingAction({ type: "edit", measurement });
     setShowApiKeyPrompt(true);
   };
 
@@ -110,8 +110,8 @@ export default function Home() {
       const response = await fetch(`/api/measurements?id=${measurement._id}`, {
         method: "DELETE",
         headers: {
-          'x-api-key': apiKey
-        }
+          "x-api-key": apiKey,
+        },
       });
 
       if (!response.ok) {
@@ -131,7 +131,7 @@ export default function Home() {
   };
 
   const handleAddMeasurement = () => {
-    setPendingAction({ type: 'add' });
+    setPendingAction({ type: "add" });
     setShowApiKeyPrompt(true);
   };
 
@@ -141,7 +141,7 @@ export default function Home() {
   };
 
   const handleDeleteClick = () => {
-    setPendingAction({ type: 'delete', measurement: measurementToDelete });
+    setPendingAction({ type: "delete", measurement: measurementToDelete });
     setShowApiKeyPrompt(true);
     setShowDeleteConfirm(false);
   };
@@ -167,7 +167,7 @@ export default function Home() {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               <StatsCard
                 title="Current Weight"
-                value={`${formatWeight(latest.weight) || "-"} kg`}
+                value={`${formatWeight(latest.weight) || "-"}`}
                 previousValue={getWeightInKg(previous.weight)}
               />
               <StatsCard
