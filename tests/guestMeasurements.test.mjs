@@ -31,3 +31,11 @@ test("guest saves insert and reorder backdated records and replace edits without
   assert.equal(previous.length, 1);
   assert.equal(added[0].weight, 79);
 });
+
+test("same-day guest entries retain insertion order regardless of their random IDs", () => {
+  const first = [{ _id: "guest-z", date: "2026-10-01", chest: 100 }];
+  const added = saveGuestMeasurement(first, { date: "2026-10-01", chest: 101 }, "guest-a");
+  assert.deepEqual(added.map((entry) => entry._id), ["guest-z", "guest-a"]);
+  const edited = saveGuestMeasurement(added, { date: "2026-10-01", chest: 99 }, "guest-z");
+  assert.deepEqual(edited.map((entry) => entry._id), ["guest-z", "guest-a"]);
+});

@@ -1,9 +1,9 @@
 // app/page.js
 "use client";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import useMeasurements from "@/hooks/useMeasurements";
 import MeasurementHistory from "@/components/MeasurementHistory";
-import { getAverageBiceps } from "@/lib/measurements.mjs";
+import { getAverageBiceps, getMetricTrend } from "@/lib/measurements.mjs";
 import StatsCard from "@/components/StatsCard";
 import ProgressChart from "@/components/ProgressChart";
 import MeasurementForm from "@/components/MeasurementForm";
@@ -21,25 +21,23 @@ export default function Home() {
 
   return (
     <main className="flex min-h-screen items-center justify-center bg-black p-4 text-white sm:p-6">
-      <div className="w-full max-w-lg space-y-8">
+      <div className="w-full max-w-sm space-y-10">
         <div className="space-y-3 text-center">
           <h1 className="font-display text-5xl font-bold tracking-tight sm:text-6xl">girthOS</h1>
           <p className="text-gray-400">Track your girth</p>
         </div>
-        <div className="rounded-3xl border border-white/10 bg-white/5 p-5 sm:p-8">
-          <h2 className="font-display text-xl font-semibold">Welcome to girthOS</h2>
-          <p className="mt-2 text-sm leading-relaxed text-gray-400">Explore as a guest or sign in as an admin to manage your measurements.</p>
-          <div className="mt-6 grid gap-3 sm:grid-cols-2">
-            <button type="button" onClick={() => setSession({ mode: "guest" })} className="rounded-2xl border border-blue-500/30 bg-blue-500/10 p-5 text-left transition hover:bg-blue-500/20 focus-visible:outline-2 focus-visible:outline-blue-400">
-              <span className="block text-lg font-semibold">Guest</span>
-              <span className="mt-2 block text-sm leading-relaxed text-gray-400">Try sample data or your own measurements. No key needed.</span>
+        <div className="space-y-5">
+          <div className="grid grid-cols-2 gap-3">
+            <button type="button" onClick={() => setSession({ mode: "guest" })} className="rounded-2xl border border-white/15 bg-white/[0.07] px-4 py-6 text-center transition hover:bg-white/[0.12] focus-visible:outline-2 focus-visible:outline-white/60">
+              <span className="block text-base font-medium">Guest</span>
+              <span className="mt-1 block text-xs text-gray-500">Explore</span>
             </button>
-            <button type="button" onClick={() => setShowAdminPrompt(true)} className="rounded-2xl border border-white/10 bg-white/5 p-5 text-left transition hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-blue-400">
-              <span className="block text-lg font-semibold">Admin</span>
-              <span className="mt-2 block text-sm leading-relaxed text-gray-400">Use your API key to access and save your measurements.</span>
+            <button type="button" onClick={() => setShowAdminPrompt(true)} className="rounded-2xl border border-white/10 px-4 py-6 text-center transition hover:bg-white/5 focus-visible:outline-2 focus-visible:outline-white/60">
+              <span className="block text-base font-medium">Admin</span>
+              <span className="mt-1 block text-xs text-gray-500">API key</span>
             </button>
           </div>
-          <p className="mt-5 text-xs leading-relaxed text-gray-500">Guest data is temporary and clears when you leave, close, or reload the page.</p>
+          <p className="text-center text-xs text-gray-500">Guest sessions aren&apos;t saved.</p>
         </div>
       </div>
       <ApiKeyPrompt show={showAdminPrompt} onClose={() => setShowAdminPrompt(false)} onConfirm={(apiKey) => {
@@ -66,8 +64,12 @@ function Dashboard({ isGuest, initialApiKey, onExit }) {
   const [showApiKeyPrompt, setShowApiKeyPrompt] = useState(false);
   const [pendingAction, setPendingAction] = useState(null);
   const [apiKey, setApiKey] = useState(initialApiKey);
-  const latest = measurements[measurements.length - 1] || {};
-  const previous = measurements[measurements.length - 2] || {};
+  const summary = useMemo(() => ({
+    weight: getMetricTrend(measurements, (m) => m.weight),
+    height: getMetricTrend(measurements, (m) => m.height),
+    biceps: getMetricTrend(measurements, getAverageBiceps),
+    chest: getMetricTrend(measurements, (m) => m.chest),
+  }), [measurements]);
   const savedHeight = [...measurements]
     .reverse()
     .find((measurement) => measurement.height != null)?.height;
@@ -173,27 +175,23 @@ function Dashboard({ isGuest, initialApiKey, onExit }) {
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
               <StatsCard
                 title="Current Weight"
-                value={latest.weight}
+                {...summary.weight}
                 unit="kg"
-                previousValue={previous.weight}
               />
               <StatsCard
                 title="Current Height"
-                value={latest.height}
+                {...summary.height}
                 unit="cm"
-                previousValue={previous.height}
               />
               <StatsCard
-                title="Biceps"
-                value={getAverageBiceps(latest)}
+                title="Latest Biceps"
+                {...summary.biceps}
                 unit="cm"
-                previousValue={getAverageBiceps(previous)}
               />
               <StatsCard
-                title="Chest"
-                value={latest.chest}
+                title="Latest Chest"
+                {...summary.chest}
                 unit="cm"
-                previousValue={previous.chest}
               />
             </div>
 

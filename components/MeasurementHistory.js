@@ -105,22 +105,16 @@ export default function MeasurementHistory({ measurements, onEdit, onDelete }) {
                   { label: "Chest", value: formatCm(m.chest) },
                   {
                     label: "Biceps",
-                    value: getAverageBiceps(m)
-                      ? formatCm(getAverageBiceps(m))
-                      : "-",
+                    value: formatCm(getAverageBiceps(m)),
                   },
                   { label: "Waist", value: formatCm(m.waist) },
                   {
                     label: "Thighs",
-                    value: getAverageThighs(m)
-                      ? formatCm(getAverageThighs(m))
-                      : "-",
+                    value: formatCm(getAverageThighs(m)),
                   },
                   {
                     label: "Calves",
-                    value: getAverageCalves(m)
-                      ? formatCm(getAverageCalves(m))
-                      : "-",
+                    value: formatCm(getAverageCalves(m)),
                   },
                 ].map(({ label, value }) => (
                   <div
@@ -173,6 +167,7 @@ export default function MeasurementHistory({ measurements, onEdit, onDelete }) {
           </tr>
         </thead>
         <tbody>
+          {entries.length === 0 && <tr><td colSpan={9} className="py-8 text-center text-sm text-gray-400">No measurements yet.</td></tr>}
           {entries
             .map((m) => (
               <tr
@@ -189,25 +184,19 @@ export default function MeasurementHistory({ measurements, onEdit, onDelete }) {
                   {formatWeight(m.weight)}
                 </td>
                 <td className="text-center py-3 px-4 text-white text-sm">
-                  {m.chest ? `${m.chest.toFixed(1)} cm` : "-"}
+                  {formatCm(m.chest)}
                 </td>
                 <td className="text-center py-3 px-4 text-white text-sm">
-                  {m.leftBicep && m.rightBicep
-                    ? formatCm(getAverageBiceps(m))
-                    : "-"}
+                  {formatCm(getAverageBiceps(m))}
                 </td>
                 <td className="text-center py-3 px-4 text-white text-sm">
-                  {m.waist ? `${m.waist.toFixed(1)} cm` : "-"}
+                  {formatCm(m.waist)}
                 </td>
                 <td className="text-center py-3 px-4 text-white text-sm">
-                  {m.leftThigh && m.rightThigh
-                    ? formatCm(getAverageThighs(m))
-                    : "-"}
+                  {formatCm(getAverageThighs(m))}
                 </td>
                 <td className="text-center py-3 px-4 text-white text-sm">
-                  {m.leftCalf && m.rightCalf
-                    ? formatCm(getAverageCalves(m))
-                    : "-"}
+                  {formatCm(getAverageCalves(m))}
                 </td>
                 <td className="text-center py-3 px-4 text-white text-sm">
                   <RowActions

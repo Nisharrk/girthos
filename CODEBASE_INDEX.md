@@ -20,8 +20,8 @@ Girthos is a small Next.js 15 App Router application for recording and viewing b
 
 ### UI components
 
-- `components/StatsCard.js` — displays a current metric and its change from the previous value.
-- `components/ProgressChart.js` — client-only ApexCharts line chart for body circumference series.
+- `components/StatsCard.js` — displays the latest recorded metric and its change from the previous recorded value, skipping blank entries via `getMetricTrend`.
+- `components/ProgressChart.js` — client-only ApexCharts view with declarative, accessible series toggles. `lib/chartData.mjs` prepares sorted, aligned daily series and finite axis bounds; `lib/chartOptions.mjs` owns renderer styling and responsive options.
 - `components/MeasurementForm.js` — measurement entry/edit dialog; remembers height in local storage.
 - `components/ApiKeyPrompt.js` — collects the API key before dashboard write actions.
 - `components/LoadingSkeleton.js` — dashboard loading placeholder.
@@ -40,7 +40,9 @@ Girthos is a small Next.js 15 App Router application for recording and viewing b
 3. The form sends `POST` for a new record or `PUT` for an edit; delete sends `DELETE` with the record `id` in the query string. These calls include `x-api-key`.
 4. On success, the dashboard reloads the list and recalculates its summary and chart/table display from the returned records.
 
-Guest changes are only held in React state, with no API writes or browser storage. They disappear on exit, reload, or page close. `lib/guestMeasurements.mjs` creates fresh sample records relative to the local date and orders guest saves chronologically. `hooks/useMeasurements.js` only fetches when enabled for Admin. `components/ProgressChart.js` unmounts chart effects with the chart when its dataset becomes empty, avoiding calls on a destroyed ApexCharts instance.
+Guest changes are only held in React state, with no API writes or browser storage. They disappear on exit, reload, or page close. `lib/guestMeasurements.mjs` creates fresh sample records relative to the local date and orders guest saves chronologically, retaining insertion order for same-day entries. `hooks/useMeasurements.js` only fetches when enabled for Admin.
+
+The circumference chart ignores weight/height-only rows, invalid dates, and non-positive/non-finite values. For multiple entries on one calendar date it uses the last nonblank value per metric; history still shows every record. Paired measurements require both sides in the same record. Sparse series share date coordinates with null gaps, and empty series are omitted. Axis bounds remain stable when hiding series, including on mobile. Empty datasets and all-hidden selections use explicit empty states, with no imperative calls on chart instances.
 
 ## Configuration and commands
 

@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { validateMeasurement, toNumber, average, formatMeasurement, localDate } from "../lib/measurements.mjs";
+import { validateMeasurement, toNumber, average, formatMeasurement, localDate, getMetricTrend, getAverageBiceps, formatDate } from "../lib/measurements.mjs";
 
 const valid = { date: "2026-10-27", height: "180", weight: "80.5" };
 const validate = (input) => validateMeasurement(input, "2026-10-27");
@@ -39,4 +39,15 @@ test("preserves numeric zero in formatting and averages without turning missing 
 
 test("date defaults use local calendar components", () => {
   assert.equal(localDate(new Date(2026, 9, 27, 23, 59)), "2026-10-27");
+});
+
+test("latest metric cards retain the last two recorded values across partial entries", () => {
+  const records = [{ chest: 100 }, { chest: null }, { chest: "102" }, { weight: 80 }];
+  assert.deepEqual(getMetricTrend(records, (m) => m.chest), { value: 102, previousValue: 100 });
+  assert.deepEqual(getMetricTrend(records, getAverageBiceps), { value: null, previousValue: null });
+  assert.deepEqual(getMetricTrend([{ leftBicep: 32, rightBicep: 34 }, { leftBicep: 35 }], getAverageBiceps), { value: 33, previousValue: null });
+});
+
+test("missing and invalid history dates do not display the Unix epoch", () => {
+  for (const value of [undefined, null, "", "bad"]) assert.equal(formatDate(value), "-");
 });
