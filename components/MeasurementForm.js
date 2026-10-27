@@ -1,10 +1,60 @@
 // components/MeasurementForm.js
 "use client";
 import { useState, useEffect } from "react";
+import { NUMERIC_FIELDS, localDate, validateMeasurement } from "@/lib/measurements.mjs";
+import { requestJson } from "@/lib/api.mjs";
+import FieldError from "@/components/FieldError";
 
-export default function MeasurementForm({ show, onClose, onSuccess, measurement, apiKey }) {
+function Field({ label, unit, error, readOnly, ...props }) {
+  return (
+    <label className="block">
+      <span className="mb-1.5 block text-[11px] font-medium uppercase tracking-wider text-gray-500">
+        {label}
+      </span>
+      <div className="relative">
+        <input
+          {...props}
+          readOnly={readOnly}
+          aria-invalid={Boolean(error)}
+          aria-describedby={error ? `${props.name}-error` : undefined}
+          className={`w-full rounded-xl border bg-white/5 px-3.5 py-2.5 text-base text-white outline-none transition [color-scheme:dark] placeholder:text-gray-600 focus:bg-white/[0.07] focus:ring-2 sm:text-sm ${
+            unit ? "pr-10" : ""
+          } ${error ? "border-red-500/40 focus:border-red-400/60 focus:ring-red-500/15" : "border-white/10 focus:border-white/20 focus:ring-blue-500/30"} ${
+            readOnly ? "cursor-not-allowed opacity-60" : ""
+          }`}
+        />
+        {unit && (
+          <span className="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-[11px] font-medium text-gray-600">
+            {unit}
+          </span>
+        )}
+      </div>
+      <FieldError id={`${props.name}-error`}>{error}</FieldError>
+    </label>
+  );
+}
+
+function Group({ title, children }) {
+  return (
+    <div className="space-y-2.5">
+      <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-gray-600">
+        {title}
+      </p>
+      <div className="grid grid-cols-2 gap-2.5 sm:gap-3">{children}</div>
+    </div>
+  );
+}
+
+export default function MeasurementForm({
+  show,
+  onClose,
+  onSuccess,
+  measurement,
+  apiKey,
+  fixedHeight,
+}) {
   const [formData, setFormData] = useState({
-    date: new Date().toISOString().split("T")[0],
+    date: localDate(),
     height: "",
     weight: "",
     chest: "",
@@ -19,70 +69,31 @@ export default function MeasurementForm({ show, onClose, onSuccess, measurement,
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
   const [validationErrors, setValidationErrors] = useState({});
+  const [heightIsFixed, setHeightIsFixed] = useState(false);
 
-  // Validate form data
-  const validateForm = () => {
-    const errors = {};
-    const today = new Date();
-    const selectedDate = new Date(formData.date);
-
-    // Date validation
-    if (selectedDate > today) {
-      errors.date = "Future dates are not allowed";
-    }
-
-    // Required fields validation
-    if (!formData.date) errors.date = "Date is required";
-    if (!formData.weight) errors.weight = "Weight is required";
-    if (!formData.height) errors.height = "Height is required";
-
-    // Negative value validation
-    const numericFields = [
-      "height", "weight", "chest", "leftBicep", "rightBicep",
-      "waist", "leftThigh", "rightThigh", "leftCalf", "rightCalf"
-    ];
-
-    numericFields.forEach(field => {
-      if (formData[field] && Number(formData[field]) < 0) {
-        errors[field] = "Value cannot be negative";
-      }
-    });
-
-    // Range validation
-    if (formData.height && (Number(formData.height) < 50 || Number(formData.height) > 300)) {
-      errors.height = "Height must be between 50 and 300 cm";
-    }
-
-    if (formData.weight && (Number(formData.weight) < 20 || Number(formData.weight) > 300)) {
-      errors.weight = "Weight must be between 20 and 300 kg";
-    }
-
-    setValidationErrors(errors);
-    return Object.keys(errors).length === 0;
+  const update = (field) => (event) => {
+    setFormData({ ...formData, [field]: event.target.value });
+    setValidationErrors((current) => ({ ...current, [field]: undefined }));
   };
+
 
   useEffect(() => {
     if (measurement) {
+      setHeightIsFixed(false);
       setFormData({
         date: new Date(measurement.date).toISOString().split("T")[0],
-        height: measurement.height ? String(measurement.height) : "",
-        weight: measurement.weight ? String(measurement.weight) : "",
-        chest: measurement.chest ? String(measurement.chest) : "",
-        leftBicep: measurement.leftBicep ? String(measurement.leftBicep) : "",
-        rightBicep: measurement.rightBicep ? String(measurement.rightBicep) : "",
-        waist: measurement.waist ? String(measurement.waist) : "",
-        leftThigh: measurement.leftThigh ? String(measurement.leftThigh) : "",
-        rightThigh: measurement.rightThigh ? String(measurement.rightThigh) : "",
-        leftCalf: measurement.leftCalf ? String(measurement.leftCalf) : "",
-        rightCalf: measurement.rightCalf ? String(measurement.rightCalf) : "",
+        ...Object.fromEntries(NUMERIC_FIELDS.map((field) => [field, measurement[field] == null ? "" : String(measurement[field])])),
       });
     } else {
-      const savedHeight = localStorage.getItem("userHeight");
+      const savedHeight =
+        fixedHeight != null
+          ? String(fixedHeight)
+          : localStorage.getItem("userHeight") ?? "";
+      setHeightIsFixed(savedHeight !== "");
       setFormData({
-        date: new Date().toISOString().split("T")[0],
-        height: savedHeight || "",
+        date: localDate(),
+        height: savedHeight,
         weight: "",
         chest: "",
         leftBicep: "",
@@ -94,53 +105,44 @@ export default function MeasurementForm({ show, onClose, onSuccess, measurement,
         rightCalf: "",
       });
     }
-  }, [measurement]);
+  }, [measurement, fixedHeight]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!validateForm()) return;
+    const { value, errors } = validateMeasurement(formData);
+    for (const input of e.currentTarget.querySelectorAll("input")) {
+      if (input.validity.badInput) errors[input.name] = "Enter a valid number";
+      else if (input.validity.stepMismatch) errors[input.name] = "Use increments of 0.1";
+    }
+    setValidationErrors(errors);
+    if (Object.keys(errors).length) {
+      e.currentTarget.elements.namedItem(Object.keys(errors)[0])?.focus();
+      return;
+    }
 
     setIsSubmitting(true);
-    setIsLoading(true);
     setError("");
 
     try {
-      const dataToSubmit = {
-        ...formData,
-        weight: Number(formData.weight),
-        chest: formData.chest ? Number(formData.chest) : null,
-        leftBicep: formData.leftBicep ? Number(formData.leftBicep) : null,
-        rightBicep: formData.rightBicep ? Number(formData.rightBicep) : null,
-        waist: formData.waist ? Number(formData.waist) : null,
-        leftThigh: formData.leftThigh ? Number(formData.leftThigh) : null,
-        rightThigh: formData.rightThigh ? Number(formData.rightThigh) : null,
-        leftCalf: formData.leftCalf ? Number(formData.leftCalf) : null,
-        rightCalf: formData.rightCalf ? Number(formData.rightCalf) : null,
-      };
+      const dataToSubmit = value;
 
       const url = measurement
         ? `/api/measurements?id=${measurement._id}`
         : "/api/measurements";
       const method = measurement ? "PUT" : "POST";
-      const body = measurement ? { ...dataToSubmit, id: measurement._id } : dataToSubmit;
+      const body = measurement
+        ? { ...dataToSubmit, id: measurement._id }
+        : dataToSubmit;
 
-      const response = await fetch(url, {
+      await requestJson(url, {
         method,
         headers: {
           "Content-Type": "application/json",
-          "x-api-key": apiKey
+          "x-api-key": apiKey,
         },
         body: JSON.stringify(body),
       });
 
-      if (!response.ok) {
-        if (response.status === 401) {
-          throw new Error("Invalid API key");
-        }
-        throw new Error("Failed to save measurement");
-      }
-
-      // Save height to localStorage
       if (!measurement && formData.height) {
         localStorage.setItem("userHeight", formData.height);
       }
@@ -151,298 +153,207 @@ export default function MeasurementForm({ show, onClose, onSuccess, measurement,
       setError(err.message || "Failed to save measurement");
     } finally {
       setIsSubmitting(false);
-      setIsLoading(false);
     }
   };
 
   if (!show) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center p-4 z-50">
-      <div className="bg-white/5 backdrop-blur-xl rounded-2xl w-full max-w-2xl p-4 sm:p-6 relative border border-white/10 max-h-[90vh] overflow-y-auto">
-        <button
-          onClick={onClose}
-          className="absolute top-2 right-2 sm:top-4 sm:right-4 text-gray-400 hover:text-white transition-colors p-2 rounded-full hover:bg-white/10"
-        >
-          ✕
-        </button>
-        
-        <h2 className="text-white text-xl sm:text-2xl font-semibold mb-4 sm:mb-6 tracking-tight">
-          {measurement ? "Edit Measurement" : "Add New Measurement"}
-        </h2>
+    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/70 p-0 backdrop-blur-md sm:items-center sm:p-4">
+      <div className="flex max-h-[92dvh] w-full flex-col overflow-hidden rounded-t-3xl border border-white/10 bg-[#0a0a0a]/95 shadow-2xl backdrop-blur-xl sm:max-h-[85dvh] sm:max-w-lg sm:rounded-3xl">
+        <div className="flex items-center justify-between gap-4 border-b border-white/10 px-4 py-4 sm:px-6">
+          <h2 className="font-display text-lg font-semibold tracking-tight text-white">
+            {measurement ? "Edit measurement" : "New measurement"}
+          </h2>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Close"
+            className="rounded-full p-2 text-gray-500 transition-colors hover:bg-white/10 hover:text-white"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-5 w-5"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              strokeWidth="2"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
 
-        {error && (
-          <div className="mb-4 p-3 sm:p-4 bg-red-500/10 border border-red-500/20 rounded-xl">
-            <p className="text-red-400 text-xs sm:text-sm">{error}</p>
-          </div>
-        )}
+        <form noValidate onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col">
+          <div className="min-h-0 flex-1 space-y-5 overflow-y-auto overscroll-contain px-4 py-5 sm:px-6">
+            {error && (
+              <div role="alert" className="rounded-xl border border-red-500/20 bg-white/5 px-3.5 py-2.5 text-xs leading-relaxed text-red-400">
+                {error}
+              </div>
+            )}
 
-        <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
-          {/* Date */}
-          <div>
-            <label className="block text-xs sm:text-sm font-medium text-gray-400 mb-1 sm:mb-2">Date</label>
-            <input
+            <Field
+              label="Date"
               type="date"
               name="date"
               value={formData.date}
-              onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-              className={`w-full bg-white/5 border ${
-                validationErrors.date ? 'border-red-500/50' : 'border-white/10'
-              } rounded-xl px-3 sm:px-4 py-2 sm:py-3 text-white text-sm
-                       placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-white/20 
-                       focus:border-transparent transition-all duration-200`}
-              max={new Date().toISOString().split('T')[0]}
+              onChange={update("date")}
+              max={localDate()}
+              error={validationErrors.date}
               required
             />
-            {validationErrors.date && (
-              <p className="mt-1 text-xs sm:text-sm text-red-400">{validationErrors.date}</p>
-            )}
-          </div>
 
-          {/* Primary Measurements */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
-            <div>
-              <label className="block text-xs sm:text-sm font-medium text-gray-400 mb-1 sm:mb-2">Weight (kg)</label>
-              <input
+            <Group title="Body">
+              <Field
+                label="Weight"
+                unit="kg"
                 type="number"
                 step="0.1"
                 name="weight"
                 value={formData.weight}
-                onChange={(e) => setFormData({ ...formData, weight: e.target.value })}
-                className={`w-full bg-white/5 border ${
-                  validationErrors.weight ? 'border-red-500/50' : 'border-white/10'
-                } rounded-xl px-3 sm:px-4 py-2 sm:py-3 text-white text-sm
-                         placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-white/20 
-                         focus:border-transparent transition-all duration-200 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none`}
-                placeholder="Enter weight in kg"
+                onChange={update("weight")}
+                error={validationErrors.weight}
                 required
               />
-              {validationErrors.weight && (
-                <p className="mt-1 text-xs sm:text-sm text-red-400">{validationErrors.weight}</p>
-              )}
-            </div>
-
-            <div>
-              <label className="block text-xs sm:text-sm font-medium text-gray-400 mb-1 sm:mb-2">Height (cm)</label>
-              <input
+              <Field
+                label="Height"
+                unit="cm"
                 type="number"
                 step="0.1"
                 name="height"
                 value={formData.height}
-                onChange={(e) => setFormData({ ...formData, height: e.target.value })}
-                className={`w-full bg-white/5 border ${
-                  validationErrors.height ? 'border-red-500/50' : 'border-white/10'
-                } rounded-xl px-3 sm:px-4 py-2 sm:py-3 text-white text-sm
-                         placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-white/20 
-                         focus:border-transparent transition-all duration-200 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none`}
-                placeholder="Enter height in cm"
+                onChange={(event) => {
+                  if (measurement || !heightIsFixed) update("height")(event);
+                }}
+                readOnly={!measurement && heightIsFixed}
+                title={!measurement && heightIsFixed ? "Using your saved height" : undefined}
+                error={validationErrors.height}
                 required
               />
-              {validationErrors.height && (
-                <p className="mt-1 text-xs sm:text-sm text-red-400">{validationErrors.height}</p>
-              )}
-            </div>
-          </div>
-
-          {/* Body Measurements */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
-            <div>
-              <label className="block text-xs sm:text-sm font-medium text-gray-400 mb-1 sm:mb-2">Chest (cm)</label>
-              <input
+              <Field
+                label="Chest"
+                unit="cm"
                 type="number"
                 step="0.1"
                 name="chest"
                 value={formData.chest}
-                onChange={(e) => setFormData({ ...formData, chest: e.target.value })}
-                className={`w-full bg-white/5 border ${
-                  validationErrors.chest ? 'border-red-500/50' : 'border-white/10'
-                } rounded-xl px-3 sm:px-4 py-2 sm:py-3 text-white text-sm
-                         placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-white/20 
-                         focus:border-transparent transition-all duration-200 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none`}
-                placeholder="Enter chest measurement"
+                onChange={update("chest")}
+                error={validationErrors.chest}
               />
-              {validationErrors.chest && (
-                <p className="mt-1 text-xs sm:text-sm text-red-400">{validationErrors.chest}</p>
-              )}
-            </div>
-
-            <div>
-              <label className="block text-xs sm:text-sm font-medium text-gray-400 mb-1 sm:mb-2">Waist (cm)</label>
-              <input
+              <Field
+                label="Waist"
+                unit="cm"
                 type="number"
                 step="0.1"
                 name="waist"
                 value={formData.waist}
-                onChange={(e) => setFormData({ ...formData, waist: e.target.value })}
-                className={`w-full bg-white/5 border ${
-                  validationErrors.waist ? 'border-red-500/50' : 'border-white/10'
-                } rounded-xl px-3 sm:px-4 py-2 sm:py-3 text-white text-sm
-                         placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-white/20 
-                         focus:border-transparent transition-all duration-200 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none`}
-                placeholder="Enter waist measurement"
+                onChange={update("waist")}
+                error={validationErrors.waist}
               />
-              {validationErrors.waist && (
-                <p className="mt-1 text-xs sm:text-sm text-red-400">{validationErrors.waist}</p>
-              )}
-            </div>
-          </div>
+            </Group>
 
-          {/* Biceps */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
-            <div>
-              <label className="block text-xs sm:text-sm font-medium text-gray-400 mb-1 sm:mb-2">Left Bicep (cm)</label>
-              <input
+            <Group title="Arms">
+              <Field
+                label="Left bicep"
+                unit="cm"
                 type="number"
                 step="0.1"
                 name="leftBicep"
                 value={formData.leftBicep}
-                onChange={(e) => setFormData({ ...formData, leftBicep: e.target.value })}
-                className={`w-full bg-white/5 border ${
-                  validationErrors.leftBicep ? 'border-red-500/50' : 'border-white/10'
-                } rounded-xl px-3 sm:px-4 py-2 sm:py-3 text-white text-sm
-                         placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-white/20 
-                         focus:border-transparent transition-all duration-200 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none`}
-                placeholder="Enter left bicep measurement"
+                onChange={update("leftBicep")}
+                error={validationErrors.leftBicep}
               />
-              {validationErrors.leftBicep && (
-                <p className="mt-1 text-xs sm:text-sm text-red-400">{validationErrors.leftBicep}</p>
-              )}
-            </div>
-
-            <div>
-              <label className="block text-xs sm:text-sm font-medium text-gray-400 mb-1 sm:mb-2">Right Bicep (cm)</label>
-              <input
+              <Field
+                label="Right bicep"
+                unit="cm"
                 type="number"
                 step="0.1"
                 name="rightBicep"
                 value={formData.rightBicep}
-                onChange={(e) => setFormData({ ...formData, rightBicep: e.target.value })}
-                className={`w-full bg-white/5 border ${
-                  validationErrors.rightBicep ? 'border-red-500/50' : 'border-white/10'
-                } rounded-xl px-3 sm:px-4 py-2 sm:py-3 text-white text-sm
-                         placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-white/20 
-                         focus:border-transparent transition-all duration-200 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none`}
-                placeholder="Enter right bicep measurement"
+                onChange={update("rightBicep")}
+                error={validationErrors.rightBicep}
               />
-              {validationErrors.rightBicep && (
-                <p className="mt-1 text-xs sm:text-sm text-red-400">{validationErrors.rightBicep}</p>
-              )}
-            </div>
-          </div>
+            </Group>
 
-          {/* Thighs */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
-            <div>
-              <label className="block text-xs sm:text-sm font-medium text-gray-400 mb-1 sm:mb-2">Left Thigh (cm)</label>
-              <input
+            <Group title="Legs">
+              <Field
+                label="Left thigh"
+                unit="cm"
                 type="number"
                 step="0.1"
                 name="leftThigh"
                 value={formData.leftThigh}
-                onChange={(e) => setFormData({ ...formData, leftThigh: e.target.value })}
-                className={`w-full bg-white/5 border ${
-                  validationErrors.leftThigh ? 'border-red-500/50' : 'border-white/10'
-                } rounded-xl px-3 sm:px-4 py-2 sm:py-3 text-white text-sm
-                         placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-white/20 
-                         focus:border-transparent transition-all duration-200 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none`}
-                placeholder="Enter left thigh measurement"
+                onChange={update("leftThigh")}
+                error={validationErrors.leftThigh}
               />
-              {validationErrors.leftThigh && (
-                <p className="mt-1 text-xs sm:text-sm text-red-400">{validationErrors.leftThigh}</p>
-              )}
-            </div>
-
-            <div>
-              <label className="block text-xs sm:text-sm font-medium text-gray-400 mb-1 sm:mb-2">Right Thigh (cm)</label>
-              <input
+              <Field
+                label="Right thigh"
+                unit="cm"
                 type="number"
                 step="0.1"
                 name="rightThigh"
                 value={formData.rightThigh}
-                onChange={(e) => setFormData({ ...formData, rightThigh: e.target.value })}
-                className={`w-full bg-white/5 border ${
-                  validationErrors.rightThigh ? 'border-red-500/50' : 'border-white/10'
-                } rounded-xl px-3 sm:px-4 py-2 sm:py-3 text-white text-sm
-                         placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-white/20 
-                         focus:border-transparent transition-all duration-200 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none`}
-                placeholder="Enter right thigh measurement"
+                onChange={update("rightThigh")}
+                error={validationErrors.rightThigh}
               />
-              {validationErrors.rightThigh && (
-                <p className="mt-1 text-xs sm:text-sm text-red-400">{validationErrors.rightThigh}</p>
-              )}
-            </div>
-          </div>
-
-          {/* Calves */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
-            <div>
-              <label className="block text-xs sm:text-sm font-medium text-gray-400 mb-1 sm:mb-2">Left Calf (cm)</label>
-              <input
+              <Field
+                label="Left calf"
+                unit="cm"
                 type="number"
                 step="0.1"
                 name="leftCalf"
                 value={formData.leftCalf}
-                onChange={(e) => setFormData({ ...formData, leftCalf: e.target.value })}
-                className={`w-full bg-white/5 border ${
-                  validationErrors.leftCalf ? 'border-red-500/50' : 'border-white/10'
-                } rounded-xl px-3 sm:px-4 py-2 sm:py-3 text-white text-sm
-                         placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-white/20 
-                         focus:border-transparent transition-all duration-200 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none`}
-                placeholder="Enter left calf measurement"
+                onChange={update("leftCalf")}
+                error={validationErrors.leftCalf}
               />
-              {validationErrors.leftCalf && (
-                <p className="mt-1 text-xs sm:text-sm text-red-400">{validationErrors.leftCalf}</p>
-              )}
-            </div>
-
-            <div>
-              <label className="block text-xs sm:text-sm font-medium text-gray-400 mb-1 sm:mb-2">Right Calf (cm)</label>
-              <input
+              <Field
+                label="Right calf"
+                unit="cm"
                 type="number"
                 step="0.1"
                 name="rightCalf"
                 value={formData.rightCalf}
-                onChange={(e) => setFormData({ ...formData, rightCalf: e.target.value })}
-                className={`w-full bg-white/5 border ${
-                  validationErrors.rightCalf ? 'border-red-500/50' : 'border-white/10'
-                } rounded-xl px-3 sm:px-4 py-2 sm:py-3 text-white text-sm
-                         placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-white/20 
-                         focus:border-transparent transition-all duration-200 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none`}
-                placeholder="Enter right calf measurement"
+                onChange={update("rightCalf")}
+                error={validationErrors.rightCalf}
               />
-              {validationErrors.rightCalf && (
-                <p className="mt-1 text-xs sm:text-sm text-red-400">{validationErrors.rightCalf}</p>
-              )}
-            </div>
+            </Group>
           </div>
 
-          {/* Submit Button */}
-          <div className="flex justify-end gap-3 sm:gap-4 pt-4 sm:pt-6">
+          <div className="flex items-center gap-3 border-t border-white/10 px-4 py-4 pb-[calc(1rem+env(safe-area-inset-bottom))] sm:justify-end sm:px-6 sm:pb-4">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 sm:px-6 py-2 sm:py-2.5 text-sm sm:text-base text-white/90 rounded-full bg-white/10 hover:bg-white/20 
-                       transition-colors duration-200 font-medium tracking-wide"
+              className="flex-1 rounded-full px-4 py-3 text-sm font-medium text-gray-400 transition-colors hover:text-white sm:flex-none sm:py-2"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={isSubmitting}
-              className="px-4 sm:px-6 py-2 sm:py-2.5 text-sm sm:text-base text-white rounded-full bg-blue-500 hover:bg-blue-600 
-                       transition-colors duration-200 font-medium tracking-wide disabled:opacity-50 disabled:cursor-not-allowed
-                       flex items-center gap-2"
+              className="inline-flex flex-1 items-center justify-center gap-2 rounded-full bg-blue-500 px-5 py-3 text-sm font-medium text-white transition-colors hover:bg-blue-600 disabled:cursor-not-allowed disabled:opacity-50 sm:flex-none sm:py-2"
             >
               {isSubmitting ? (
                 <>
-                  <svg className="animate-spin h-4 w-4 sm:h-5 sm:w-5" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                  <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24">
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                      fill="none"
+                    />
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    />
                   </svg>
-                  <span>Saving...</span>
+                  Saving
                 </>
               ) : (
-                <span>Save Measurement</span>
+                "Save"
               )}
             </button>
           </div>

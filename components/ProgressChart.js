@@ -1,20 +1,27 @@
 // components/ProgressChart.js
 "use client";
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import dynamic from "next/dynamic";
+import { toNumber, average } from "@/lib/measurements.mjs";
+import { sans } from "@/app/fonts";
 const Chart = dynamic(() => import("react-apexcharts"), { ssr: false });
+
+const CHART_FONT = sans.style.fontFamily;
+
+const SERIES_NAMES = ["Chest", "Biceps", "Waist", "Thighs", "Calves"];
 
 export default function ProgressChart({ measurements }) {
   const chartRef = useRef(null);
-  const [allSeriesVisible, setAllSeriesVisible] = useState(true);
   const [visibleSeries, setVisibleSeries] = useState(
-    new Set(["Chest", "Biceps", "Waist", "Thighs", "Calves"])
+    new Set(SERIES_NAMES)
   );
-  const seriesNames = ["Chest", "Biceps", "Waist", "Thighs", "Calves"];
 
-  const chartOptions = {
+  const allSeriesVisible = visibleSeries.size === SERIES_NAMES.length;
+
+  const chartOptions = useMemo(() => ({
     chart: {
       type: "line",
+      height: 300,
       toolbar: { show: false },
       foreColor: "#9CA3AF",
       background: "transparent",
@@ -39,7 +46,7 @@ export default function ProgressChart({ measurements }) {
           chartRef.current = chartContext;
         },
         legendClick: function (chartContext, seriesIndex, config) {
-          const seriesName = seriesNames[seriesIndex];
+          const seriesName = SERIES_NAMES[seriesIndex];
           const newVisibleSeries = new Set(visibleSeries);
 
           if (newVisibleSeries.has(seriesName)) {
@@ -51,7 +58,6 @@ export default function ProgressChart({ measurements }) {
           }
 
           setVisibleSeries(newVisibleSeries);
-          setAllSeriesVisible(newVisibleSeries.size === seriesNames.length);
         },
       },
     },
@@ -83,7 +89,7 @@ export default function ProgressChart({ measurements }) {
         show: true,
         style: {
           colors: "rgba(255, 255, 255, 0.5)",
-          fontFamily: "SF Pro Display, -apple-system, system-ui, sans-serif",
+          fontFamily: CHART_FONT,
           fontSize: "10px",
         },
         datetimeFormatter: {
@@ -117,7 +123,7 @@ export default function ProgressChart({ measurements }) {
         text: "Measurements (cm)",
         style: {
           color: "rgba(255, 255, 255, 0.5)",
-          fontFamily: "SF Pro Display, -apple-system, system-ui, sans-serif",
+          fontFamily: CHART_FONT,
           fontSize: "11px",
           fontWeight: 500,
         },
@@ -126,10 +132,11 @@ export default function ProgressChart({ measurements }) {
         show: true,
         style: {
           colors: "rgba(255, 255, 255, 0.5)",
-          fontFamily: "SF Pro Display, -apple-system, system-ui, sans-serif",
+          fontFamily: CHART_FONT,
           fontSize: "10px",
         },
-        formatter: (value) => value.toFixed(1),
+        formatter: (value) =>
+          Number.isFinite(value) ? value.toFixed(1) : "-",
       },
       axisBorder: {
         show: true,
@@ -153,12 +160,13 @@ export default function ProgressChart({ measurements }) {
       },
       style: {
         fontSize: "11px",
-        fontFamily: "SF Pro Display, -apple-system, system-ui, sans-serif",
+        fontFamily: CHART_FONT,
       },
       shared: true,
       intersect: false,
       y: {
-        formatter: (value) => (value ? `${value.toFixed(1)} cm` : "-"),
+        formatter: (value) =>
+          Number.isFinite(value) ? `${value.toFixed(1)} cm` : "-",
       },
       marker: {
         show: true,
@@ -184,14 +192,14 @@ export default function ProgressChart({ measurements }) {
         colors: "rgba(255, 255, 255, 0.5)",
         useSeriesColors: false,
       },
-      fontFamily: "SF Pro Display, -apple-system, system-ui, sans-serif",
+      fontFamily: CHART_FONT,
       fontSize: "11px",
       itemMargin: {
         horizontal: 12,
         vertical: 8,
       },
       onItemClick: {
-        toggleDataSeries: true,
+        toggleDataSeries: false,
       },
       onItemHover: {
         highlightDataSeries: true,
@@ -211,112 +219,118 @@ export default function ProgressChart({ measurements }) {
     },
     responsive: [
       {
-        breakpoint: 480,
+        breakpoint: 640,
         options: {
           chart: {
-            height: 250,
+            height: 260,
             background: "transparent",
           },
           legend: {
             position: "bottom",
             horizontalAlign: "center",
-            offsetY: 7,
+            offsetY: 4,
             itemMargin: {
               horizontal: 8,
-              vertical: 8,
+              vertical: 6,
             },
           },
           yaxis: {
+            title: {
+              text: "",
+            },
             labels: {
-              offsetX: -10,
+              offsetX: -8,
+            },
+          },
+          markers: {
+            size: 3,
+            hover: {
+              size: 5,
+              sizeOffset: 2,
             },
           },
           grid: {
             padding: {
-              right: 10,
-              left: 10,
+              right: 6,
+              left: 6,
             },
           },
         },
       },
     ],
-  };
+  }), [visibleSeries]);
 
-  const chartSeries = [
+  const chartSeries = useMemo(() => [
     {
       name: "Chest",
       data: measurements.map((m) => ({
         x: new Date(m.date),
-        y: m.chest,
+        y: toNumber(m.chest),
       })),
     },
     {
       name: "Biceps",
       data: measurements.map((m) => ({
         x: new Date(m.date),
-        y: (Number(m.leftBicep) + Number(m.rightBicep)) / 2,
+        y: average(m.leftBicep, m.rightBicep),
       })),
     },
     {
       name: "Waist",
       data: measurements.map((m) => ({
         x: new Date(m.date),
-        y: m.waist,
+        y: toNumber(m.waist),
       })),
     },
     {
       name: "Thighs",
       data: measurements.map((m) => ({
         x: new Date(m.date),
-        y: (Number(m.leftThigh) + Number(m.rightThigh)) / 2,
+        y: average(m.leftThigh, m.rightThigh),
       })),
     },
     {
       name: "Calves",
       data: measurements.map((m) => ({
         x: new Date(m.date),
-        y: (Number(m.leftCalf) + Number(m.rightCalf)) / 2,
+        y: average(m.leftCalf, m.rightCalf),
       })),
     },
-  ];
+  ], [measurements]);
 
   const handleToggleAll = () => {
     if (!chartRef.current) return;
 
     if (allSeriesVisible) {
-      seriesNames.forEach((name) => {
+      SERIES_NAMES.forEach((name) => {
         chartRef.current.hideSeries(name);
       });
       setVisibleSeries(new Set());
     } else {
-      seriesNames.forEach((name) => {
+      SERIES_NAMES.forEach((name) => {
         chartRef.current.showSeries(name);
       });
-      setVisibleSeries(new Set(seriesNames));
+      setVisibleSeries(new Set(SERIES_NAMES));
     }
-    setAllSeriesVisible(!allSeriesVisible);
   };
 
   // Reset visibility state when measurements change
   useEffect(() => {
     if (chartRef.current) {
-      seriesNames.forEach((name) => {
+      SERIES_NAMES.forEach((name) => {
         chartRef.current.showSeries(name);
       });
-      setVisibleSeries(new Set(seriesNames));
-      setAllSeriesVisible(true);
+      setVisibleSeries(new Set(SERIES_NAMES));
     }
   }, [measurements]);
 
   return (
-    <div className="bg-black/40 backdrop-blur-xl rounded-2xl p-4 sm:p-6 border border-white/10">
-      <div className="flex justify-end mb-4 sm:mb-6">
+    <div className="rounded-2xl border border-white/10 bg-black/40 p-3 backdrop-blur-xl sm:p-6">
+      <div className="mb-3 flex justify-end sm:mb-6">
         <button
           onClick={handleToggleAll}
           disabled={measurements.length === 0}
-          className="px-3 sm:px-4 py-1.5 sm:py-2 text-xs sm:text-sm text-white/90 rounded-full bg-white/10 hover:bg-white/20 
-                   transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed
-                   font-medium tracking-wide"
+          className="rounded-full bg-white/10 px-3 py-2 text-xs font-medium tracking-wide text-white/90 transition-colors duration-200 hover:bg-white/20 disabled:cursor-not-allowed disabled:opacity-50 sm:px-4 sm:py-2 sm:text-sm"
         >
           {allSeriesVisible ? "Hide All" : "Show All"}
         </button>
@@ -325,12 +339,7 @@ export default function ProgressChart({ measurements }) {
       {measurements.length > 0 ? (
         <div className="relative">
           <div className="chart-container">
-            <Chart
-              options={chartOptions}
-              series={chartSeries}
-              type="line"
-              height={300}
-            />
+            <Chart options={chartOptions} series={chartSeries} type="line" />
           </div>
           <div className="mt-4 sm:mt-6 text-xs sm:text-sm text-gray-400 text-center font-light">
             Tap on the chart to see detailed measurements

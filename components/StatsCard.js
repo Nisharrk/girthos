@@ -1,41 +1,31 @@
+import { formatMeasurement, toNumber } from "@/lib/measurements.mjs";
+
 // components/StatsCard.js
-export default function StatsCard({ title, value, previousValue }) {
-  const calculateChange = () => {
-    if (!value || !previousValue) return null;
-    
-    // Extract numeric values, handling both string and number inputs
-    const currentValue = parseFloat(value.replace(/[^0-9.-]+/g, ''));
-    const prevValue = parseFloat(previousValue.toString().replace(/[^0-9.-]+/g, ''));
-    
-    if (isNaN(currentValue) || isNaN(prevValue)) return null;
-    
-    const change = currentValue - prevValue;
-    
-    // Don't show change if the difference is less than 0.1
-    if (Math.abs(change) < 0.1) return null;
-    
-    return {
-      value: Math.abs(change).toFixed(1),
-      isPositive: change > 0,
-      isNegative: change < 0
-    };
+export default function StatsCard({ title, value, previousValue, unit }) {
+  const current = toNumber(value);
+  const previous = toNumber(previousValue);
+  const difference = current === null || previous === null ? 0 : current - previous;
+  const change = Math.abs(difference) < 0.1 ? null : {
+    value: Math.abs(difference).toFixed(1),
+    isPositive: difference > 0,
+    isNegative: difference < 0,
   };
 
-  const change = calculateChange();
-
   return (
-    <div className="bg-white/5 backdrop-blur-xl rounded-2xl p-4 sm:p-6 relative overflow-hidden group transition-all duration-300 hover:bg-white/10 border border-white/10">
-      <div className="absolute inset-0 bg-gradient-to-br from-white/[0.05] to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-      
-      <div className="relative z-10">
-        <h3 className="text-gray-400 text-xs sm:text-sm font-medium mb-2 sm:mb-3 tracking-wide">{title}</h3>
+    <div className="group relative overflow-hidden rounded-2xl border border-white/10 bg-white/5 p-4 backdrop-blur-xl transition-all duration-300 hover:bg-white/10 sm:p-6">
+      <div className="absolute inset-0 bg-gradient-to-br from-white/[0.05] to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+
+      <div className="relative z-10 min-w-0">
+        <h3 className="mb-1.5 text-[11px] font-medium leading-tight tracking-wide text-gray-400 sm:mb-3 sm:text-sm">
+          {title}
+        </h3>
         <div className="space-y-1">
-          <span className="text-white text-xl sm:text-3xl font-semibold tracking-tight block">
-            {value}
+          <span className="font-display block truncate text-2xl font-semibold tracking-tight text-white sm:text-3xl">
+            {formatMeasurement(value, unit)}
           </span>
           {change && (
-            <span className={`text-xs sm:text-sm font-medium ${change.isPositive ? 'text-green-400' : change.isNegative ? 'text-red-400' : 'text-gray-400'}`}>
-              {change.isPositive ? '↑' : '↓'} {change.value} {title.includes('Weight') ? 'kg' : 'cm'}
+            <span className={`text-xs font-medium sm:text-sm ${change.isPositive ? 'text-green-400' : change.isNegative ? 'text-red-400' : 'text-gray-400'}`}>
+              {change.isPositive ? '↑' : '↓'} {change.value} {unit}
             </span>
           )}
         </div>

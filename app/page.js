@@ -1,6 +1,9 @@
 // app/page.js
 "use client";
-import { useState, useEffect } from "react";
+import { useState } from "react";
+import useMeasurements from "@/hooks/useMeasurements";
+import MeasurementHistory from "@/components/MeasurementHistory";
+import { getAverageBiceps } from "@/lib/measurements.mjs";
 import StatsCard from "@/components/StatsCard";
 import ProgressChart from "@/components/ProgressChart";
 import MeasurementForm from "@/components/MeasurementForm";
@@ -8,80 +11,22 @@ import LoadingSkeleton from "@/components/LoadingSkeleton";
 import ApiKeyPrompt from "@/components/ApiKeyPrompt";
 
 export default function Home() {
-  const [measurements, setMeasurements] = useState([]);
+  const { measurements, isLoading, error, refresh: fetchData, remove } = useMeasurements();
+  const [actionError, setActionError] = useState("");
+  const [isDeleting, setIsDeleting] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [activeTab, setActiveTab] = useState("chart");
   const [editingMeasurement, setEditingMeasurement] = useState(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [measurementToDelete, setMeasurementToDelete] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
   const [showApiKeyPrompt, setShowApiKeyPrompt] = useState(false);
   const [pendingAction, setPendingAction] = useState(null);
   const [apiKey, setApiKey] = useState("");
   const latest = measurements[measurements.length - 1] || {};
   const previous = measurements[measurements.length - 2] || {};
-
-  // Format height in cm
-  const formatHeight = (heightCm) => {
-    if (!heightCm) return "- cm";
-    return `${heightCm.toFixed(1)} cm`;
-  };
-
-  // Format weight in kg
-  const formatWeight = (weightKg) => {
-    if (!weightKg) return "-";
-    return `${weightKg.toFixed(1)} kg`;
-  };
-
-  // Get numeric weight in kg
-  const getWeightInKg = (weightKg) => {
-    if (!weightKg) return null;
-    return Number(weightKg);
-  };
-
-  // Calculate average biceps
-  const getAverageBiceps = (measurement) => {
-    if (!measurement?.leftBicep || !measurement?.rightBicep) return null;
-    return (
-      (Number(measurement.leftBicep) + Number(measurement.rightBicep)) /
-      2
-    ).toFixed(1);
-  };
-
-  // Calculate average thighs
-  const getAverageThighs = (measurement) => {
-    if (!measurement?.leftThigh || !measurement?.rightThigh) return null;
-    return (
-      (Number(measurement.leftThigh) + Number(measurement.rightThigh)) /
-      2
-    ).toFixed(1);
-  };
-
-  // Calculate average calves
-  const getAverageCalves = (measurement) => {
-    if (!measurement?.leftCalf || !measurement?.rightCalf) return null;
-    return (
-      (Number(measurement.leftCalf) + Number(measurement.rightCalf)) /
-      2
-    ).toFixed(1);
-  };
-
-  useEffect(() => {
-    fetchData();
-  }, []);
-
-  const fetchData = async () => {
-    try {
-      setIsLoading(true);
-      const response = await fetch("/api/measurements");
-      const data = await response.json();
-      setMeasurements(data);
-    } catch (error) {
-      console.error("Error fetching data:", error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  const savedHeight = [...measurements]
+    .reverse()
+    .find((measurement) => measurement.height != null)?.height;
 
   const handleApiKeyConfirm = (key) => {
     setApiKey(key);
@@ -89,7 +34,7 @@ export default function Home() {
 
     if (pendingAction) {
       if (pendingAction.type === "delete") {
-        handleDelete(pendingAction.measurement);
+        handleDelete(pendingAction.measurement, key);
       } else if (pendingAction.type === "edit") {
         setEditingMeasurement(pendingAction.measurement);
         setShowForm(true);
@@ -105,28 +50,19 @@ export default function Home() {
     setShowApiKeyPrompt(true);
   };
 
-  const handleDelete = async (measurement) => {
+  const handleDelete = async (measurement, key = apiKey) => {
+    if (isDeleting) return;
+    setIsDeleting(true);
+    setActionError("");
     try {
-      const response = await fetch(`/api/measurements?id=${measurement._id}`, {
-        method: "DELETE",
-        headers: {
-          "x-api-key": apiKey,
-        },
-      });
-
-      if (!response.ok) {
-        if (response.status === 401) {
-          setApiKey("");
-          throw new Error("Invalid API key");
-        }
-        throw new Error("Failed to delete measurement");
-      }
-
-      fetchData();
+      await remove(measurement._id, key);
       setShowDeleteConfirm(false);
       setMeasurementToDelete(null);
     } catch (error) {
-      console.error("Error deleting measurement:", error);
+      if (error.status === 401) setApiKey("");
+      setActionError(error.message);
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -150,7 +86,7 @@ export default function Home() {
     <div className="min-h-screen bg-black text-white p-4 sm:p-6 overflow-x-hidden">
       <div className="max-w-6xl mx-auto space-y-6 sm:space-y-8">
         <div className="space-y-2">
-          <h1 className="text-4xl sm:text-6xl font-black tracking-tight text-white">
+          <h1 className="font-display text-4xl sm:text-6xl font-bold tracking-tight text-white">
             girthOS
           </h1>
           <p className="text-gray-400 text-sm font-medium tracking-wide">
@@ -158,41 +94,48 @@ export default function Home() {
           </p>
         </div>
 
+        {(error || actionError) && <div role="alert" className="rounded-xl border border-red-500/20 bg-red-500/10 p-4 text-sm text-red-300">
+          <p>{actionError || error}</p>
+          {error && <button type="button" onClick={fetchData} className="mt-2 underline">Retry loading measurements</button>}
+        </div>}
         {/* Content */}
         {isLoading ? (
           <LoadingSkeleton />
         ) : (
           <>
             {/* Stats Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
               <StatsCard
                 title="Current Weight"
-                value={`${formatWeight(latest.weight) || "-"}`}
-                previousValue={getWeightInKg(previous.weight)}
+                value={latest.weight}
+                unit="kg"
+                previousValue={previous.weight}
               />
               <StatsCard
                 title="Current Height"
-                value={formatHeight(latest.height)}
+                value={latest.height}
+                unit="cm"
                 previousValue={previous.height}
               />
               <StatsCard
                 title="Biceps"
-                value={`${getAverageBiceps(latest) || "-"} cm`}
+                value={getAverageBiceps(latest)}
+                unit="cm"
                 previousValue={getAverageBiceps(previous)}
               />
               <StatsCard
                 title="Chest"
-                value={`${latest.chest || "-"} cm`}
+                value={latest.chest}
+                unit="cm"
                 previousValue={previous.chest}
               />
             </div>
 
             {/* Add Measurement Button */}
-            <div className="flex justify-end">
+            <div className="flex">
               <button
                 onClick={handleAddMeasurement}
-                className="flex items-center gap-2 bg-white/10 hover:bg-white/20 text-white px-4 sm:px-6 py-2.5 rounded-full 
-                         transition-colors duration-200 font-medium tracking-wide text-sm sm:text-base"
+                className="flex w-full items-center justify-center gap-2 rounded-full bg-white/10 px-4 py-3 text-sm font-medium tracking-wide text-white transition-colors duration-200 hover:bg-white/20 active:bg-white/25 sm:w-auto sm:px-6 sm:py-2.5 sm:text-base"
               >
                 <span>+</span>
                 <span>Add Measurement</span>
@@ -251,7 +194,7 @@ export default function Home() {
             <div className="bg-black backdrop-blur-xl rounded-2xl p-4 sm:p-6 border border-white/10">
               {activeTab === "chart" ? (
                 <div>
-                  <h2 className="text-lg sm:text-xl font-semibold mb-2 text-white tracking-tight">
+                  <h2 className="font-display text-lg sm:text-xl font-semibold mb-2 text-white tracking-tight">
                     Progress Tracking
                   </h2>
                   <p className="text-gray-400 text-sm mb-4 sm:mb-6">
@@ -260,128 +203,10 @@ export default function Home() {
                   <ProgressChart measurements={measurements} />
                 </div>
               ) : (
-                <div className="overflow-x-auto">
-                  <div className="mb-4">
-                    <h2 className="text-lg sm:text-xl font-semibold text-white tracking-tight">
-                      Measurement History
-                    </h2>
-                  </div>
-
-                  <div className="overflow-x-auto">
-                    <table className="w-full min-w-[800px]">
-                      <thead>
-                        <tr className="text-left border-b border-white/10">
-                          <th className="pb-3 text-sm font-medium text-gray-400">
-                            Date
-                          </th>
-                          <th className="pb-3 text-sm font-medium text-gray-400 text-center">
-                            Height
-                          </th>
-                          <th className="pb-3 text-sm font-medium text-gray-400 text-center">
-                            Weight
-                          </th>
-                          <th className="pb-3 text-sm font-medium text-gray-400 text-center">
-                            Chest
-                          </th>
-                          <th className="pb-3 text-sm font-medium text-gray-400 text-center">
-                            Biceps
-                          </th>
-                          <th className="pb-3 text-sm font-medium text-gray-400 text-center">
-                            Waist
-                          </th>
-                          <th className="pb-3 text-sm font-medium text-gray-400 text-center">
-                            Thighs
-                          </th>
-                          <th className="pb-3 text-sm font-medium text-gray-400 text-center">
-                            Calves
-                          </th>
-                          <th className="pb-3 text-sm font-medium text-gray-400 text-center">
-                            Actions
-                          </th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {measurements
-                          .slice()
-                          .reverse()
-                          .map((m) => (
-                            <tr
-                              key={m._id}
-                              className="border-b border-white/10 hover:bg-white/5 transition-colors"
-                            >
-                              <td className="py-3 px-4 text-white text-sm">
-                                {new Date(m.date).toLocaleDateString()}
-                              </td>
-                              <td className="text-center py-3 px-4 text-white text-sm">
-                                {formatHeight(m.height)}
-                              </td>
-                              <td className="text-center py-3 px-4 text-white text-sm">
-                                {formatWeight(m.weight)}
-                              </td>
-                              <td className="text-center py-3 px-4 text-white text-sm">
-                                {m.chest ? `${m.chest.toFixed(1)} cm` : "-"}
-                              </td>
-                              <td className="text-center py-3 px-4 text-white text-sm">
-                                {m.leftBicep && m.rightBicep
-                                  ? `${getAverageBiceps(m)} cm`
-                                  : "-"}
-                              </td>
-                              <td className="text-center py-3 px-4 text-white text-sm">
-                                {m.waist ? `${m.waist.toFixed(1)} cm` : "-"}
-                              </td>
-                              <td className="text-center py-3 px-4 text-white text-sm">
-                                {m.leftThigh && m.rightThigh
-                                  ? `${getAverageThighs(m)} cm`
-                                  : "-"}
-                              </td>
-                              <td className="text-center py-3 px-4 text-white text-sm">
-                                {m.leftCalf && m.rightCalf
-                                  ? `${getAverageCalves(m)} cm`
-                                  : "-"}
-                              </td>
-                              <td className="text-center py-3 px-4 text-white text-sm">
-                                <div className="flex items-center justify-center gap-2">
-                                  <button
-                                    onClick={() => handleEdit(m)}
-                                    className="p-1.5 text-gray-400 hover:text-white transition-colors rounded-full hover:bg-white/10"
-                                  >
-                                    <svg
-                                      xmlns="http://www.w3.org/2000/svg"
-                                      className="h-4 w-4"
-                                      viewBox="0 0 20 20"
-                                      fill="currentColor"
-                                    >
-                                      <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
-                                    </svg>
-                                  </button>
-                                  <button
-                                    onClick={() => {
-                                      setMeasurementToDelete(m);
-                                      setShowDeleteConfirm(true);
-                                    }}
-                                    className="p-1.5 text-gray-400 hover:text-red-400 transition-colors rounded-full hover:bg-white/10"
-                                  >
-                                    <svg
-                                      xmlns="http://www.w3.org/2000/svg"
-                                      className="h-4 w-4"
-                                      viewBox="0 0 20 20"
-                                      fill="currentColor"
-                                    >
-                                      <path
-                                        fillRule="evenodd"
-                                        d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z"
-                                        clipRule="evenodd"
-                                      />
-                                    </svg>
-                                  </button>
-                                </div>
-                              </td>
-                            </tr>
-                          ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </div>
+                <MeasurementHistory measurements={measurements} onEdit={handleEdit} onDelete={(measurement) => {
+                  setMeasurementToDelete(measurement);
+                  setShowDeleteConfirm(true);
+                }} />
               )}
             </div>
           </>
@@ -396,35 +221,35 @@ export default function Home() {
           onSuccess={fetchData}
           measurement={editingMeasurement}
           apiKey={apiKey}
+          fixedHeight={savedHeight}
         />
       )}
 
       {/* Delete Confirmation Modal */}
       {showDeleteConfirm && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center p-4 z-50">
-          <div className="bg-white/5 backdrop-blur-xl rounded-2xl p-6 max-w-md w-full border border-white/10">
-            <h2 className="text-xl font-semibold text-white mb-4">
+          <div className="w-full max-w-md rounded-2xl border border-white/10 bg-white/5 p-5 backdrop-blur-xl sm:p-6">
+            <h2 className="font-display mb-3 text-xl font-semibold text-white">
               Delete Measurement
             </h2>
-            <p className="text-gray-400 mb-6">
+            <p className="mb-6 text-sm text-gray-400 sm:text-base">
               Are you sure you want to delete this measurement? This action
               cannot be undone.
             </p>
-            <div className="flex justify-end gap-4">
+            <div className="flex gap-3">
               <button
                 onClick={() => {
                   setShowDeleteConfirm(false);
                   setMeasurementToDelete(null);
                 }}
-                className="px-6 py-2.5 text-sm text-white/90 rounded-full bg-white/10 hover:bg-white/20 
-                         transition-colors duration-200 font-medium tracking-wide"
+                className="flex-1 rounded-full bg-white/10 px-5 py-3 text-sm font-medium tracking-wide text-white/90 transition-colors duration-200 hover:bg-white/20 sm:flex-none sm:px-6 sm:py-2.5"
               >
                 Cancel
               </button>
               <button
                 onClick={handleDeleteClick}
-                className="px-6 py-2.5 text-sm text-white rounded-full bg-red-500 hover:bg-red-600 
-                         transition-colors duration-200 font-medium tracking-wide"
+                disabled={isDeleting}
+                className="flex-1 rounded-full bg-red-500 px-5 py-3 text-sm font-medium tracking-wide text-white transition-colors duration-200 hover:bg-red-600 sm:flex-none sm:px-6 sm:py-2.5"
               >
                 Delete
               </button>

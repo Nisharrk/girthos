@@ -1,20 +1,24 @@
-import { Roboto } from "next/font/google";
+import { sans, display } from "./fonts";
 import "./globals.css";
-
-const roboto = Roboto({
-  variable: "--font-roboto",
-  subsets: ["latin"],
-});
 
 export const metadata = {
   title: "girthos",
   description: "Track your girth",
 };
 
+export const viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+  themeColor: "#000000",
+};
+
 export default function RootLayout({ children }) {
   return (
     <html lang="en">
-      <body className={`${roboto.variable} antialiased overflow-x-hidden`}>
+      <body
+        className={`${sans.variable} ${display.variable} font-sans antialiased overflow-x-hidden`}
+      >
         {children}
       </body>
     </html>

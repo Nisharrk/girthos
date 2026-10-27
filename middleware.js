@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { isValidApiKey } from '@/lib/auth.mjs'
 
 export function middleware(request) {
   // Only protect POST, PUT, and DELETE requests
@@ -6,9 +7,9 @@ export function middleware(request) {
     const apiKey = request.headers.get('x-api-key')
     const expectedApiKey = process.env.API_KEY
 
-    if (!apiKey || apiKey !== expectedApiKey) {
+    if (!isValidApiKey(apiKey, expectedApiKey)) {
       return NextResponse.json(
-        { error: 'Unauthorized - API key required' },
+        { error: 'Invalid API key. Please try again.' },
         { status: 401 }
       )
     }
@@ -19,4 +20,4 @@ export function middleware(request) {
 
 export const config = {
   matcher: '/api/measurements/:path*',
-} 
+}

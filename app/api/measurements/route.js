@@ -1,135 +1,58 @@
 import connectDB from "@/lib/db";
 import Measurement from "@/models/Measurement";
+import { validateMeasurement } from "@/lib/measurements.mjs";
 import { NextResponse } from "next/server";
 
+function failure(error, message) {
+  // Do not log connection strings or request contents.
+  console.error(message, error.name);
+  const status = error instanceof SyntaxError || error.name === "ValidationError" || error.name === "CastError" ? 400 : 500;
+  return NextResponse.json({ error: status === 400 ? "Invalid measurement data" : message }, { status });
+}
+const validId = (id) => typeof id === "string" && /^[a-f\d]{24}$/i.test(id);
+
 export async function GET() {
-  await connectDB();
   try {
-    const data = await Measurement.find().sort({ date: 1 });
+    await connectDB();
+    const data = await Measurement.find().sort({ date: 1, _id: 1 }).lean();
     return NextResponse.json(data);
   } catch (error) {
-    return NextResponse.json({ error: "Error fetching data" }, { status: 500 });
+    return failure(error, "Unable to load measurements. Please try again.");
   }
 }
 
-export async function POST(request) {
-  await connectDB();
+async function save(request, editing) {
   try {
     const body = await request.json();
-
-    // Validate required fields
-    if (!body.date || !body.weight) {
-      return NextResponse.json(
-        { error: "Date and weight are required" },
-        { status: 400 }
-      );
+    if (editing && !validId(body?.id)) {
+      return NextResponse.json({ error: "A valid measurement ID is required" }, { status: 400 });
     }
-
-    const newEntry = new Measurement({
-      date: new Date(body.date),
-      height: body.height,
-      weight: body.weight,
-      chest: body.chest,
-      leftBicep: body.leftBicep,
-      rightBicep: body.rightBicep,
-      waist: body.waist,
-      leftThigh: body.leftThigh,
-      rightThigh: body.rightThigh,
-      leftCalf: body.leftCalf,
-      rightCalf: body.rightCalf,
-    });
-
-    await newEntry.save();
-    return NextResponse.json(newEntry, { status: 201 });
+    const { value, errors } = validateMeasurement(body);
+    if (Object.keys(errors).length) {
+      return NextResponse.json({ error: Object.entries(errors).map(([field, message]) => `${field}: ${message}`).join("; "), errors }, { status: 400 });
+    }
+    await connectDB();
+    const data = editing
+      ? await Measurement.findByIdAndUpdate(body.id, value, { new: true, runValidators: true })
+      : await Measurement.create(value);
+    if (!data) return NextResponse.json({ error: "Measurement not found" }, { status: 404 });
+    return NextResponse.json(data, { status: editing ? 200 : 201 });
   } catch (error) {
-    return NextResponse.json(
-      { error: "Error creating entry" },
-      { status: 500 }
-    );
+    return failure(error, "Unable to save measurement. Please try again.");
   }
 }
+export const POST = (request) => save(request, false);
+export const PUT = (request) => save(request, true);
 
 export async function DELETE(request) {
-  await connectDB();
   try {
-    const { searchParams } = new URL(request.url);
-    const id = searchParams.get("id");
-
-    if (!id) {
-      return NextResponse.json(
-        { error: "Measurement ID is required" },
-        { status: 400 }
-      );
-    }
-
-    const deletedMeasurement = await Measurement.findByIdAndDelete(id);
-    if (!deletedMeasurement) {
-      return NextResponse.json(
-        { error: "Measurement not found" },
-        { status: 404 }
-      );
-    }
-
+    const id = new URL(request.url).searchParams.get("id");
+    if (!validId(id)) return NextResponse.json({ error: "A valid measurement ID is required" }, { status: 400 });
+    await connectDB();
+    const data = await Measurement.findByIdAndDelete(id);
+    if (!data) return NextResponse.json({ error: "Measurement not found" }, { status: 404 });
     return NextResponse.json({ message: "Measurement deleted successfully" });
   } catch (error) {
-    return NextResponse.json(
-      { error: "Error deleting measurement" },
-      { status: 500 }
-    );
-  }
-}
-
-export async function PUT(request) {
-  await connectDB();
-  try {
-    const body = await request.json();
-    const { id, ...updateData } = body;
-
-    if (!id) {
-      return NextResponse.json(
-        { error: "Measurement ID is required" },
-        { status: 400 }
-      );
-    }
-
-    // Validate required fields
-    if (!updateData.date || !updateData.weight) {
-      return NextResponse.json(
-        { error: "Date and weight are required" },
-        { status: 400 }
-      );
-    }
-
-    const updatedMeasurement = await Measurement.findByIdAndUpdate(
-      id,
-      {
-        date: new Date(updateData.date),
-        height: updateData.height ? Number(updateData.height) : null,
-        weight: updateData.weight,
-        chest: updateData.chest,
-        leftBicep: updateData.leftBicep,
-        rightBicep: updateData.rightBicep,
-        waist: updateData.waist,
-        leftThigh: updateData.leftThigh,
-        rightThigh: updateData.rightThigh,
-        leftCalf: updateData.leftCalf,
-        rightCalf: updateData.rightCalf,
-      },
-      { new: true }
-    );
-
-    if (!updatedMeasurement) {
-      return NextResponse.json(
-        { error: "Measurement not found" },
-        { status: 404 }
-      );
-    }
-
-    return NextResponse.json(updatedMeasurement);
-  } catch (error) {
-    return NextResponse.json(
-      { error: "Error updating measurement" },
-      { status: 500 }
-    );
+    return failure(error, "Unable to delete measurement. Please try again.");
   }
 }
