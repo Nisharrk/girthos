@@ -52,6 +52,9 @@ export default function MeasurementForm({
   measurement,
   apiKey,
   fixedHeight,
+  isGuest = false,
+  onGuestSave,
+  onUnauthorized,
 }) {
   const [formData, setFormData] = useState({
     date: localDate(),
@@ -89,7 +92,7 @@ export default function MeasurementForm({
       const savedHeight =
         fixedHeight != null
           ? String(fixedHeight)
-          : localStorage.getItem("userHeight") ?? "";
+          : isGuest ? "" : localStorage.getItem("userHeight") ?? "";
       setHeightIsFixed(savedHeight !== "");
       setFormData({
         date: localDate(),
@@ -105,7 +108,7 @@ export default function MeasurementForm({
         rightCalf: "",
       });
     }
-  }, [measurement, fixedHeight]);
+  }, [measurement, fixedHeight, isGuest]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -125,6 +128,12 @@ export default function MeasurementForm({
 
     try {
       const dataToSubmit = value;
+
+      if (isGuest) {
+        onGuestSave(dataToSubmit, measurement?._id);
+        onClose();
+        return;
+      }
 
       const url = measurement
         ? `/api/measurements?id=${measurement._id}`
@@ -150,6 +159,10 @@ export default function MeasurementForm({
       onSuccess();
       onClose();
     } catch (err) {
+      if (err.status === 401 && onUnauthorized) {
+        onUnauthorized();
+        return;
+      }
       setError(err.message || "Failed to save measurement");
     } finally {
       setIsSubmitting(false);
@@ -186,6 +199,7 @@ export default function MeasurementForm({
 
         <form noValidate onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col">
           <div className="min-h-0 flex-1 space-y-5 overflow-y-auto overscroll-contain px-4 py-5 sm:px-6">
+            {isGuest && <p className="text-sm text-blue-200">Guest measurement — available only until you leave, close, or reload the page.</p>}
             {error && (
               <div role="alert" className="rounded-xl border border-red-500/20 bg-white/5 px-3.5 py-2.5 text-xs leading-relaxed text-red-400">
                 {error}

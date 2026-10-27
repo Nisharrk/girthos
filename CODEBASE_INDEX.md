@@ -14,7 +14,7 @@ Girthos is a small Next.js 15 App Router application for recording and viewing b
 ### Routes and setup
 
 - `app/layout.js` — root HTML layout, Roboto font, and page metadata.
-- `app/page.js` — only page route; renders dashboard cards, chart/table views, and modal flows.
+- `app/page.js` — entry screen offers Guest or Admin; Admin verifies the API key before opening the dashboard. Dashboard renders cards, chart/history views, and modal flows. Exiting returns to the entry screen and clears the session.
 - `app/api/measurements/route.js` — route handlers: `GET` lists entries by date ascending; `POST` creates; `PUT` updates by `id`; `DELETE` removes by query-string `id`.
 - `middleware.js` — checks `x-api-key` against `API_KEY` for `POST`, `PUT`, and `DELETE` under `/api/measurements`; reads remain public.
 
@@ -35,10 +35,12 @@ Girthos is a small Next.js 15 App Router application for recording and viewing b
 
 ## Data flow
 
-1. The dashboard requests `GET /api/measurements` and keeps the returned date-ascending array in client state.
-2. The dashboard opens the API-key prompt for create, edit, or delete actions.
+1. Admin entry verifies the API key through `POST /api/measurements/verify-key`, then requests `GET /api/measurements` and keeps the returned date-ascending array in client state. The key is held in memory for the current admin session; failed write authorization prompts for it again.
+2. Guest entry starts an independent empty dashboard without API requests. “Fill with sample data” supplies eight prepared weekly measurements for the graph; “Reset to sample data” replaces the temporary records. Guests can also add, edit, and delete their own entries.
 3. The form sends `POST` for a new record or `PUT` for an edit; delete sends `DELETE` with the record `id` in the query string. These calls include `x-api-key`.
 4. On success, the dashboard reloads the list and recalculates its summary and chart/table display from the returned records.
+
+Guest changes are only held in React state, with no API writes or browser storage. They disappear on exit, reload, or page close. `lib/guestMeasurements.mjs` creates fresh sample records relative to the local date and orders guest saves chronologically. `hooks/useMeasurements.js` only fetches when enabled for Admin. `components/ProgressChart.js` unmounts chart effects with the chart when its dataset becomes empty, avoiding calls on a destroyed ApexCharts instance.
 
 ## Configuration and commands
 

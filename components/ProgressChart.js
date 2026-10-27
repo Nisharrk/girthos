@@ -11,6 +11,17 @@ const CHART_FONT = sans.style.fontFamily;
 const SERIES_NAMES = ["Chest", "Biceps", "Waist", "Thighs", "Calves"];
 
 export default function ProgressChart({ measurements }) {
+  if (measurements.length === 0) {
+    return <div className="rounded-2xl border border-white/10 bg-black/40 p-3 sm:p-6">
+      <div className="py-8 text-center text-gray-400">No measurements yet. Add your first measurement to see the chart.</div>
+    </div>;
+  }
+
+  // Keep chart effects mounted only while the ApexCharts instance exists.
+  return <MeasurementChart measurements={measurements} />;
+}
+
+function MeasurementChart({ measurements }) {
   const chartRef = useRef(null);
   const [visibleSeries, setVisibleSeries] = useState(
     new Set(SERIES_NAMES)
@@ -339,7 +350,7 @@ export default function ProgressChart({ measurements }) {
       {measurements.length > 0 ? (
         <div className="relative">
           <div className="chart-container">
-            <Chart options={chartOptions} series={chartSeries} type="line" />
+            <Chart options={chartOptions} series={chartSeries} type="line" height={300} />
           </div>
           <div className="mt-4 sm:mt-6 text-xs sm:text-sm text-gray-400 text-center font-light">
             Tap on the chart to see detailed measurements

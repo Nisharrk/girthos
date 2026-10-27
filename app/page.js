@@ -9,9 +9,53 @@ import ProgressChart from "@/components/ProgressChart";
 import MeasurementForm from "@/components/MeasurementForm";
 import LoadingSkeleton from "@/components/LoadingSkeleton";
 import ApiKeyPrompt from "@/components/ApiKeyPrompt";
+import { createGuestSamples, saveGuestMeasurement } from "@/lib/guestMeasurements.mjs";
 
 export default function Home() {
-  const { measurements, isLoading, error, refresh: fetchData, remove } = useMeasurements();
+  const [session, setSession] = useState(null);
+  const [showAdminPrompt, setShowAdminPrompt] = useState(false);
+
+  if (session) {
+    return <Dashboard isGuest={session.mode === "guest"} initialApiKey={session.apiKey || ""} onExit={() => setSession(null)} />;
+  }
+
+  return (
+    <main className="flex min-h-screen items-center justify-center bg-black p-4 text-white sm:p-6">
+      <div className="w-full max-w-lg space-y-8">
+        <div className="space-y-3 text-center">
+          <h1 className="font-display text-5xl font-bold tracking-tight sm:text-6xl">girthOS</h1>
+          <p className="text-gray-400">Track your girth</p>
+        </div>
+        <div className="rounded-3xl border border-white/10 bg-white/5 p-5 sm:p-8">
+          <h2 className="font-display text-xl font-semibold">Welcome to girthOS</h2>
+          <p className="mt-2 text-sm leading-relaxed text-gray-400">Explore as a guest or sign in as an admin to manage your measurements.</p>
+          <div className="mt-6 grid gap-3 sm:grid-cols-2">
+            <button type="button" onClick={() => setSession({ mode: "guest" })} className="rounded-2xl border border-blue-500/30 bg-blue-500/10 p-5 text-left transition hover:bg-blue-500/20 focus-visible:outline-2 focus-visible:outline-blue-400">
+              <span className="block text-lg font-semibold">Guest</span>
+              <span className="mt-2 block text-sm leading-relaxed text-gray-400">Try sample data or your own measurements. No key needed.</span>
+            </button>
+            <button type="button" onClick={() => setShowAdminPrompt(true)} className="rounded-2xl border border-white/10 bg-white/5 p-5 text-left transition hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-blue-400">
+              <span className="block text-lg font-semibold">Admin</span>
+              <span className="mt-2 block text-sm leading-relaxed text-gray-400">Use your API key to access and save your measurements.</span>
+            </button>
+          </div>
+          <p className="mt-5 text-xs leading-relaxed text-gray-500">Guest data is temporary and clears when you leave, close, or reload the page.</p>
+        </div>
+      </div>
+      <ApiKeyPrompt show={showAdminPrompt} onClose={() => setShowAdminPrompt(false)} onConfirm={(apiKey) => {
+        setShowAdminPrompt(false);
+        setSession({ mode: "admin", apiKey });
+      }} />
+    </main>
+  );
+}
+
+function Dashboard({ isGuest, initialApiKey, onExit }) {
+  const { measurements: storedMeasurements, isLoading: storedLoading, error: storedError, refresh: fetchData, remove } = useMeasurements(!isGuest);
+  const [guestMeasurements, setGuestMeasurements] = useState([]);
+  const measurements = isGuest ? guestMeasurements : storedMeasurements;
+  const isLoading = !isGuest && storedLoading;
+  const error = isGuest ? "" : storedError;
   const [actionError, setActionError] = useState("");
   const [isDeleting, setIsDeleting] = useState(false);
   const [showForm, setShowForm] = useState(false);
@@ -21,7 +65,7 @@ export default function Home() {
   const [measurementToDelete, setMeasurementToDelete] = useState(null);
   const [showApiKeyPrompt, setShowApiKeyPrompt] = useState(false);
   const [pendingAction, setPendingAction] = useState(null);
-  const [apiKey, setApiKey] = useState("");
+  const [apiKey, setApiKey] = useState(initialApiKey);
   const latest = measurements[measurements.length - 1] || {};
   const previous = measurements[measurements.length - 2] || {};
   const savedHeight = [...measurements]
@@ -46,6 +90,11 @@ export default function Home() {
   };
 
   const handleEdit = (measurement) => {
+    if (isGuest || apiKey) {
+      setEditingMeasurement(measurement);
+      setShowForm(true);
+      return;
+    }
     setPendingAction({ type: "edit", measurement });
     setShowApiKeyPrompt(true);
   };
@@ -55,7 +104,11 @@ export default function Home() {
     setIsDeleting(true);
     setActionError("");
     try {
-      await remove(measurement._id, key);
+      if (isGuest) {
+        setGuestMeasurements((current) => current.filter((entry) => entry._id !== measurement._id));
+      } else {
+        await remove(measurement._id, key);
+      }
       setShowDeleteConfirm(false);
       setMeasurementToDelete(null);
     } catch (error) {
@@ -67,6 +120,10 @@ export default function Home() {
   };
 
   const handleAddMeasurement = () => {
+    if (isGuest || apiKey) {
+      setShowForm(true);
+      return;
+    }
     setPendingAction({ type: "add" });
     setShowApiKeyPrompt(true);
   };
@@ -77,6 +134,10 @@ export default function Home() {
   };
 
   const handleDeleteClick = () => {
+    if (isGuest || apiKey) {
+      handleDelete(measurementToDelete);
+      return;
+    }
     setPendingAction({ type: "delete", measurement: measurementToDelete });
     setShowApiKeyPrompt(true);
     setShowDeleteConfirm(false);
@@ -92,6 +153,11 @@ export default function Home() {
           <p className="text-gray-400 text-sm font-medium tracking-wide">
             Track your girth
           </p>
+        </div>
+
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-white/10 bg-white/5 p-4 text-sm">
+          <p className="text-gray-400">{isGuest ? "Guest mode · Your changes are temporary and clear when you leave or reload." : "Admin mode · Your measurements are saved."}</p>
+          <button type="button" onClick={onExit} className="shrink-0 rounded-full bg-white/10 px-4 py-2 text-white transition hover:bg-white/20">{isGuest ? "Exit guest mode" : "Sign out"}</button>
         </div>
 
         {(error || actionError) && <div role="alert" className="rounded-xl border border-red-500/20 bg-red-500/10 p-4 text-sm text-red-300">
@@ -132,7 +198,7 @@ export default function Home() {
             </div>
 
             {/* Add Measurement Button */}
-            <div className="flex">
+            <div className="flex flex-wrap gap-3">
               <button
                 onClick={handleAddMeasurement}
                 className="flex w-full items-center justify-center gap-2 rounded-full bg-white/10 px-4 py-3 text-sm font-medium tracking-wide text-white transition-colors duration-200 hover:bg-white/20 active:bg-white/25 sm:w-auto sm:px-6 sm:py-2.5 sm:text-base"
@@ -140,6 +206,13 @@ export default function Home() {
                 <span>+</span>
                 <span>Add Measurement</span>
               </button>
+              {isGuest && <button type="button" onClick={() => {
+                setGuestMeasurements(createGuestSamples());
+                setActionError("");
+                setActiveTab("chart");
+              }} className="w-full rounded-full bg-blue-500 px-5 py-3 text-sm font-medium text-white transition hover:bg-blue-600 sm:w-auto sm:py-2.5 sm:text-base">
+                {guestMeasurements.length === 0 ? "Fill with sample data" : "Reset to sample data"}
+              </button>}
             </div>
 
             {/* Tabs */}
@@ -222,6 +295,17 @@ export default function Home() {
           measurement={editingMeasurement}
           apiKey={apiKey}
           fixedHeight={savedHeight}
+          isGuest={isGuest}
+          onGuestSave={(value, id) => {
+            const guestId = id || `guest-${crypto.randomUUID()}`;
+            setGuestMeasurements((current) => saveGuestMeasurement(current, value, guestId));
+          }}
+          onUnauthorized={() => {
+            setApiKey("");
+            setPendingAction({ type: editingMeasurement ? "edit" : "add", measurement: editingMeasurement });
+            setShowForm(false);
+            setShowApiKeyPrompt(true);
+          }}
         />
       )}
 

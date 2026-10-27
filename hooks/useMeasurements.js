@@ -2,12 +2,13 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { requestJson } from "@/lib/api.mjs";
 
-export default function useMeasurements() {
+export default function useMeasurements(enabled = true) {
   const [measurements, setMeasurements] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
   const activeRequest = useRef(null);
   const refresh = useCallback(async () => {
+    if (!enabled) return;
     activeRequest.current?.abort();
     const controller = new AbortController();
     activeRequest.current = controller;
@@ -22,11 +23,11 @@ export default function useMeasurements() {
     } finally {
       if (!controller.signal.aborted) setIsLoading(false);
     }
-  }, []);
+  }, [enabled]);
   useEffect(() => {
-    refresh();
+    if (enabled) refresh();
     return () => activeRequest.current?.abort();
-  }, [refresh]);
+  }, [enabled, refresh]);
   const remove = async (id, apiKey) => {
     await requestJson(`/api/measurements?id=${encodeURIComponent(id)}`, {
       method: "DELETE", headers: { "x-api-key": apiKey },
