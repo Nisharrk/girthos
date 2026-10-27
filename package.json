@@ -11,8 +11,8 @@
   },
   "dependencies": {
     "apexcharts": "^4.5.0",
-    "mongoose": "^8.13.0",
-    "next": "15.2.4",
+    "mongoose": "^8.24.7",
+    "next": "15.5.28",
     "react": "^19.0.0",
     "react-apexcharts": "^1.7.0",
     "react-dom": "^19.0.0"
@@ -21,7 +21,12 @@
     "@eslint/eslintrc": "^3",
     "@tailwindcss/postcss": "^4",
     "eslint": "^9",
-    "eslint-config-next": "15.2.4",
+    "eslint-config-next": "15.5.28",
     "tailwindcss": "^4"
+  },
+  "overrides": {
+    "next": {
+      "postcss": "8.5.32"
+    }
   }
 }
