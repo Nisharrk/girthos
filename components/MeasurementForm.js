@@ -199,6 +199,7 @@ export default function MeasurementForm({
 
         <form noValidate aria-busy={isSubmitting} onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col">
           <div className="min-h-0 flex-1 space-y-5 overflow-y-auto overscroll-contain px-4 py-5 sm:px-6">
+            <p className="text-xs text-gray-400">Enter only what you measured. Blank fields keep the last reading on the chart; history stores only what you enter. For paired measurements, enter both sides.</p>
             {isGuest && <p className="text-xs text-gray-400">Guest measurement · Changes aren’t saved.</p>}
             {error && (
               <div role="alert" className="alert-error px-3.5 py-2.5 text-sm leading-relaxed">
@@ -227,7 +228,6 @@ export default function MeasurementForm({
                 value={formData.weight}
                 onChange={update("weight")}
                 error={validationErrors.weight}
-                required
               />
               <Field
                 label="Height"
@@ -242,7 +242,6 @@ export default function MeasurementForm({
                 readOnly={!measurement && heightIsFixed}
                 title={!measurement && heightIsFixed ? "Using your saved height" : undefined}
                 error={validationErrors.height}
-                required
               />
               <Field
                 label="Chest"

@@ -11,7 +11,9 @@ export default function ProgressChart({ measurements }) {
   const { series, bounds } = useMemo(() => buildProgressChart(measurements), [measurements]);
   const [hiddenMetrics, setHiddenMetrics] = useState(() => new Set());
   const visible = useMemo(() => series.filter((metric) => !hiddenMetrics.has(metric.id)), [series, hiddenMetrics]);
-  const chartSeries = useMemo(() => visible.map(({ name, data }) => ({ name, data })), [visible]);
+  const chartSeries = useMemo(() => visible.map(({ name, data }) => ({
+    name, data: data.map(({ x, ...point }) => ({ ...point, x: new Date(x).toISOString().slice(0, 10) })),
+  })), [visible]);
   const options = useMemo(() => bounds && createProgressChartOptions({
     bounds, colors: visible.map((metric) => metric.color), fontFamily: sans.style.fontFamily,
   }), [bounds, visible]);
@@ -56,7 +58,7 @@ export default function ProgressChart({ measurements }) {
               <Chart key={visible.map(({ id }) => id).join("-")} options={options} series={chartSeries} type="line" height={300} />
             </div>
           )}
-          <p className="mt-4 text-center text-xs text-gray-500">Paired measurements use both sides.</p>
+          <p className="mt-4 text-center text-xs text-gray-500">Dates are evenly spaced. Unmeasured values carry forward from the last reading; tap a point for its measurement date. Paired measurements use both sides.</p>
         </>
       )}
     </div>

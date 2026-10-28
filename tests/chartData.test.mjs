@@ -21,17 +21,36 @@ test("empty, weight-only, or incomplete-pair datasets return a safe empty chart"
   }
 });
 
-test("sparse series share dates and preserve gaps without inventing zeroes or single-sided averages", () => {
+test("sparse series carry prior readings forward without backfilling or inventing single-sided averages", () => {
   const chart = buildProgressChart([
     record("2026-10-01", { chest: 100, leftBicep: 32, rightBicep: 34 }),
     record("2026-10-08", { waist: 80, leftBicep: 33 }),
     record("2026-10-15", { chest: 102, leftBicep: 34, rightBicep: 36 }),
   ]);
-  assert.deepEqual(values(chart, "chest"), [100, null, 102]);
-  assert.deepEqual(values(chart, "waist"), [null, 80, null]);
-  assert.deepEqual(values(chart, "biceps"), [33, null, 35]);
+  assert.deepEqual(values(chart, "chest"), [100, 100, 102]);
+  assert.deepEqual(values(chart, "waist"), [null, 80, 80]);
+  assert.deepEqual(values(chart, "biceps"), [33, 33, 35]);
   assert.deepEqual(chart.series[0].data.map((point) => point.x), chart.series[1].data.map((point) => point.x));
   assert.deepEqual(chart.series.map((series) => series.id), ["chest", "biceps", "waist"]);
+});
+
+test("carry-forward uses chronological readings, preserves source dates, and recalculates after edits or deletions", () => {
+  const records = [
+    record("2026-10-15", { leftBicep: 34, rightBicep: 36 }),
+    record("2026-10-01", { chest: 100 }),
+    record("2026-10-08", { chest: 101 }),
+  ];
+  const original = structuredClone(records);
+  const chart = buildProgressChart(records);
+  assert.deepEqual(values(chart, "chest"), [100, 101, 101]);
+  const point = chart.series.find(({ id }) => id === "chest").data[2];
+  assert.equal(point.carried, true);
+  assert.equal(point.sourceDate, Date.parse("2026-10-08T00:00:00Z"));
+  assert.deepEqual(values(buildProgressChart(records.filter((m) => m.date !== "2026-10-08")), "chest"), [100, 100]);
+  assert.deepEqual(values(buildProgressChart(records.map((m) => m.date === "2026-10-08" ? { ...m, chest: 103 } : m)), "chest"), [100, 103, 103]);
+  assert.deepEqual(records, original);
+  const options = createProgressChartOptions({ bounds: chart.bounds, colors: [], fontFamily: "sans-serif" });
+  assert.equal(options.tooltip.y.formatter(point.y, { seriesIndex: 0, dataPointIndex: 0, w: { config: { series: [{ data: [point] }] } } }), "101.0 cm (last measured Oct 8, 2026)");
 });
 
 test("same-day chart values merge without losing measurements from earlier entries", () => {
@@ -91,4 +110,19 @@ test("series colors stay attached to metrics and chart bounds do not depend on v
   assert.equal(mobileAxis.min, all.yaxis.min);
   assert.equal(mobileAxis.max, all.yaxis.max);
   assert.equal(mobileAxis.labels.formatter(80), "80.0");
+});
+
+test("entry axis spaces dates as categories and formats short labels and full tooltip dates", () => {
+  const chart = buildProgressChart([
+    record("2025-10-01", { chest: 100 }),
+    record("2025-10-08", { chest: 101 }),
+    record("2026-03-20", { chest: 102 }),
+  ]);
+  const options = createProgressChartOptions({ bounds: chart.bounds, colors: [], fontFamily: "sans-serif" });
+  assert.equal(options.xaxis.type, "category");
+  assert.equal(options.xaxis.min, undefined);
+  assert.equal(options.xaxis.max, undefined);
+  assert.equal(options.xaxis.labels.formatter("2025-10-08"), "Oct 8");
+  assert.equal(options.tooltip.x.formatter("2026-03-20"), "Mar 20, 2026");
+  assert.equal(options.xaxis.labels.formatter("invalid"), "");
 });

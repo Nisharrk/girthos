@@ -14,6 +14,14 @@ test("valid inputs normalize numbers and clear empty optional values", () => {
   assert.equal(value.leftBicep, null);
 });
 
+test("biceps-only entries do not require weight or height or fabricate missing measurements", () => {
+  const { value, errors } = validate({ date: valid.date, leftBicep: "34", rightBicep: "35" });
+  assert.deepEqual(errors, {});
+  assert.equal(value.leftBicep, 34);
+  for (const field of ["weight", "height", "chest", "waist"]) assert.equal(value[field], null);
+  assert.ok(validate({ date: valid.date }).errors.weight);
+});
+
 test("rejects invalid and future calendar dates, including normalized February dates", () => {
   for (const date of ["", "invalid", "2026-02-30", "2026-10-28", "2026-1-01"]) {
     assert.ok(validate({ ...valid, date }).errors.date, date);
