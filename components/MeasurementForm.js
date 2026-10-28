@@ -4,11 +4,12 @@ import { useState, useEffect } from "react";
 import { NUMERIC_FIELDS, localDate, validateMeasurement } from "@/lib/measurements.mjs";
 import { requestJson } from "@/lib/api.mjs";
 import FieldError from "@/components/FieldError";
+import Modal from "@/components/Modal";
 
 function Field({ label, unit, error, readOnly, ...props }) {
   return (
     <label className="block">
-      <span className="mb-1.5 block text-[11px] font-medium uppercase tracking-wider text-gray-500">
+      <span className="mb-1.5 block text-[11px] font-medium uppercase tracking-wider text-gray-400">
         {label}
       </span>
       <div className="relative">
@@ -17,14 +18,14 @@ function Field({ label, unit, error, readOnly, ...props }) {
           readOnly={readOnly}
           aria-invalid={Boolean(error)}
           aria-describedby={error ? `${props.name}-error` : undefined}
-          className={`w-full rounded-xl border bg-white/5 px-3.5 py-2.5 text-base text-white outline-none transition [color-scheme:dark] placeholder:text-gray-600 focus:bg-white/[0.07] focus:ring-2 sm:text-sm ${
+          className={`field-input ${
             unit ? "pr-10" : ""
-          } ${error ? "border-red-500/40 focus:border-red-400/60 focus:ring-red-500/15" : "border-white/10 focus:border-white/20 focus:ring-blue-500/30"} ${
+          } ${
             readOnly ? "cursor-not-allowed opacity-60" : ""
           }`}
         />
         {unit && (
-          <span className="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-[11px] font-medium text-gray-600">
+          <span className="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-[11px] font-medium text-gray-500">
             {unit}
           </span>
         )}
@@ -37,7 +38,7 @@ function Field({ label, unit, error, readOnly, ...props }) {
 function Group({ title, children }) {
   return (
     <div className="space-y-2.5">
-      <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-gray-600">
+      <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-gray-400">
         {title}
       </p>
       <div className="grid grid-cols-2 gap-2.5 sm:gap-3">{children}</div>
@@ -172,17 +173,16 @@ export default function MeasurementForm({
   if (!show) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/70 p-0 backdrop-blur-md sm:items-center sm:p-4">
-      <div className="flex max-h-[92dvh] w-full flex-col overflow-hidden rounded-t-3xl border border-white/10 bg-[#0a0a0a]/95 shadow-2xl backdrop-blur-xl sm:max-h-[85dvh] sm:max-w-lg sm:rounded-3xl">
+    <Modal titleId="measurement-form-title" onClose={onClose} sheet>
         <div className="flex items-center justify-between gap-4 border-b border-white/10 px-4 py-4 sm:px-6">
-          <h2 className="font-display text-lg font-semibold tracking-tight text-white">
+          <h2 id="measurement-form-title" className="font-display text-xl font-semibold tracking-tight text-white">
             {measurement ? "Edit measurement" : "New measurement"}
           </h2>
           <button
             type="button"
             onClick={onClose}
             aria-label="Close"
-            className="rounded-full p-2 text-gray-500 transition-colors hover:bg-white/10 hover:text-white"
+            className="button-icon"
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -197,11 +197,11 @@ export default function MeasurementForm({
           </button>
         </div>
 
-        <form noValidate onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col">
+        <form noValidate aria-busy={isSubmitting} onSubmit={handleSubmit} className="flex min-h-0 flex-1 flex-col">
           <div className="min-h-0 flex-1 space-y-5 overflow-y-auto overscroll-contain px-4 py-5 sm:px-6">
-            {isGuest && <p className="text-sm text-blue-200">Guest measurement — available only until you leave, close, or reload the page.</p>}
+            {isGuest && <p className="text-xs text-gray-400">Guest measurement · Changes aren’t saved.</p>}
             {error && (
-              <div role="alert" className="rounded-xl border border-red-500/20 bg-white/5 px-3.5 py-2.5 text-xs leading-relaxed text-red-400">
+              <div role="alert" className="alert-error px-3.5 py-2.5 text-sm leading-relaxed">
                 {error}
               </div>
             )}
@@ -337,14 +337,14 @@ export default function MeasurementForm({
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 rounded-full px-4 py-3 text-sm font-medium text-gray-400 transition-colors hover:text-white sm:flex-none sm:py-2"
+              className="button-secondary flex-1 sm:flex-none"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={isSubmitting}
-              className="inline-flex flex-1 items-center justify-center gap-2 rounded-full bg-blue-500 px-5 py-3 text-sm font-medium text-white transition-colors hover:bg-blue-600 disabled:cursor-not-allowed disabled:opacity-50 sm:flex-none sm:py-2"
+              className="button-primary flex-1 sm:flex-none"
             >
               {isSubmitting ? (
                 <>
@@ -372,7 +372,6 @@ export default function MeasurementForm({
             </button>
           </div>
         </form>
-      </div>
-    </div>
+    </Modal>
   );
 }

@@ -1,5 +1,6 @@
 import { sans, display } from "./fonts";
 import "./globals.css";
+import { THEME_STYLE } from "@/lib/theme.mjs";
 
 export const metadata = {
   title: "girthos",
@@ -17,6 +18,7 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en">
       <body
+        style={THEME_STYLE}
         className={`${sans.variable} ${display.variable} font-sans antialiased overflow-x-hidden`}
       >
         {children}

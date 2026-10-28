@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { buildProgressChart } from "../lib/chartData.mjs";
 import { createProgressChartOptions } from "../lib/chartOptions.mjs";
+import { CHART_COLORS } from "../lib/theme.mjs";
 
 const record = (date, values = {}) => ({ date, height: 180, weight: 80, ...values });
 const values = (chart, id) => chart.series.find((series) => series.id === id)?.data.map((point) => point.y);
@@ -81,7 +82,7 @@ test("series colors stay attached to metrics and chart bounds do not depend on v
   const chart = buildProgressChart([record("2026-10-01", { chest: 100, waist: 80 })]);
   const options = (series) => createProgressChartOptions({ bounds: chart.bounds, colors: series.map((entry) => entry.color), fontFamily: "sans-serif" });
   const all = options(chart.series), waistOnly = options(chart.series.filter((entry) => entry.id === "waist"));
-  assert.deepEqual(waistOnly.colors, ["#BF5AF2"]);
+  assert.deepEqual(waistOnly.colors, [CHART_COLORS.waist]);
   assert.equal(all.xaxis.min, waistOnly.xaxis.min);
   assert.equal(all.yaxis.min, waistOnly.yaxis.min);
   assert.equal(all.yaxis.max, waistOnly.yaxis.max);

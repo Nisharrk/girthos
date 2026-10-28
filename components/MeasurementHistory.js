@@ -12,9 +12,7 @@ const getServerSnapshot = () => false;
 const PAGE_SIZE = 50;
 
 function RowActions({ onEdit, onDelete, large = false }) {
-  const buttonClass = `rounded-full text-gray-400 transition-colors hover:bg-white/10 ${
-    large ? "p-3" : "p-1.5"
-  }`;
+  const buttonClass = "button-icon";
   const iconClass = large ? "h-5 w-5" : "h-4 w-4";
 
   return (
@@ -38,7 +36,7 @@ function RowActions({ onEdit, onDelete, large = false }) {
         type="button"
         onClick={onDelete}
         aria-label="Delete measurement"
-        className={`${buttonClass} hover:text-red-400`}
+        className={`${buttonClass} hover:bg-accent/10 hover:text-feedback`}
       >
         <svg
           xmlns="http://www.w3.org/2000/svg"
@@ -81,7 +79,7 @@ export default function MeasurementHistory({ measurements, onEdit, onDelete }) {
           .map((m) => (
             <div
               key={m._id}
-              className="rounded-2xl border border-white/10 bg-white/5 p-4"
+              className="rounded-2xl border border-white/10 bg-white/[0.02] p-4"
             >
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0">
@@ -119,7 +117,7 @@ export default function MeasurementHistory({ measurements, onEdit, onDelete }) {
                 ].map(({ label, value }) => (
                   <div
                     key={label}
-                    className="rounded-xl bg-white/5 px-2 py-2 text-center"
+                    className="rounded-xl bg-white/[0.03] px-2 py-2 text-center"
                   >
                     <p className="text-[10px] font-medium uppercase tracking-wider text-gray-500">
                       {label}
@@ -213,9 +211,9 @@ export default function MeasurementHistory({ measurements, onEdit, onDelete }) {
     </div>}
   </div>
     {pages > 1 && <nav aria-label="History pages" className="mt-4 flex items-center justify-between text-sm">
-      <button type="button" disabled={currentPage === 0} onClick={() => setPage(currentPage - 1)} className="rounded-full bg-white/10 px-4 py-2 disabled:opacity-40">Previous</button>
+      <button type="button" disabled={currentPage === 0} onClick={() => setPage(currentPage - 1)} className="button-secondary">Previous</button>
       <span>Page {currentPage + 1} of {pages}</span>
-      <button type="button" disabled={currentPage === pages - 1} onClick={() => setPage(currentPage + 1)} className="rounded-full bg-white/10 px-4 py-2 disabled:opacity-40">Next</button>
+      <button type="button" disabled={currentPage === pages - 1} onClick={() => setPage(currentPage + 1)} className="button-secondary">Next</button>
     </nav>}
   </>;
 }

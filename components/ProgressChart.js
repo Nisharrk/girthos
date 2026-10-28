@@ -25,9 +25,9 @@ export default function ProgressChart({ measurements }) {
   });
 
   return (
-    <div className="rounded-2xl border border-white/10 bg-black/40 p-3 backdrop-blur-xl sm:p-6">
+    <div>
       {series.length === 0 ? (
-        <div role="status" className="py-8 text-center text-sm text-gray-400">
+        <div role="status" className="flex min-h-[200px] items-center justify-center px-4 py-8 text-center text-sm leading-relaxed text-gray-400">
           {measurements.length === 0
             ? "No measurements yet. Add your first measurement to see the chart."
             : "No circumference measurements yet. Add chest, waist, or both sides of a paired measurement to see the chart."}
@@ -38,14 +38,14 @@ export default function ProgressChart({ measurements }) {
             <div role="group" aria-label="Chart measurements" className="flex flex-wrap gap-2">
               {series.map(({ id, name, color }) => (
                 <button key={id} type="button" aria-pressed={!hiddenMetrics.has(id)} onClick={() => toggleMetric(id)}
-                  className={`flex items-center gap-2 rounded-full px-3 py-2 text-xs transition hover:bg-white/10 focus-visible:outline-2 focus-visible:outline-white/60 ${hiddenMetrics.has(id) ? "text-gray-500" : "bg-white/5 text-gray-200"}`}>
+                  className={`flex min-h-11 items-center gap-2 rounded-xl border px-3 py-2 text-xs transition-colors hover:border-white/25 hover:bg-white/[0.04] ${hiddenMetrics.has(id) ? "border-white/5 text-gray-500" : "border-white/15 bg-white/[0.03] text-gray-200"}`}>
                   <span aria-hidden="true" className="h-2 w-2 rounded-full" style={{ backgroundColor: color }} />
                   {name}
                 </button>
               ))}
             </div>
             <button type="button" onClick={() => setHiddenMetrics(allVisible ? new Set(series.map(({ id }) => id)) : new Set())}
-              className="rounded-full bg-white/10 px-3 py-2 text-xs font-medium text-white/90 transition hover:bg-white/20">
+              className="button-secondary text-xs">
               {allVisible ? "Hide All" : "Show All"}
             </button>
           </div>
@@ -56,7 +56,7 @@ export default function ProgressChart({ measurements }) {
               <Chart key={visible.map(({ id }) => id).join("-")} options={options} series={chartSeries} type="line" height={300} />
             </div>
           )}
-          <p className="mt-4 text-center text-xs text-gray-400">Circumferences in cm · Paired measurements use both sides.</p>
+          <p className="mt-4 text-center text-xs text-gray-500">Paired measurements use both sides.</p>
         </>
       )}
     </div>

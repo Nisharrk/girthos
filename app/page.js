@@ -10,6 +10,7 @@ import MeasurementForm from "@/components/MeasurementForm";
 import LoadingSkeleton from "@/components/LoadingSkeleton";
 import ApiKeyPrompt from "@/components/ApiKeyPrompt";
 import { createGuestSamples, saveGuestMeasurement } from "@/lib/guestMeasurements.mjs";
+import Modal from "@/components/Modal";
 
 export default function Home() {
   const [session, setSession] = useState(null);
@@ -28,11 +29,11 @@ export default function Home() {
         </div>
         <div className="space-y-5">
           <div className="grid grid-cols-2 gap-3">
-            <button type="button" onClick={() => setSession({ mode: "guest" })} className="rounded-2xl border border-white/15 bg-white/[0.07] px-4 py-6 text-center transition hover:bg-white/[0.12] focus-visible:outline-2 focus-visible:outline-white/60">
+            <button type="button" onClick={() => setSession({ mode: "guest" })} className="entry-choice entry-choice-guest">
               <span className="block text-base font-medium">Guest</span>
               <span className="mt-1 block text-xs text-gray-500">Explore</span>
             </button>
-            <button type="button" onClick={() => setShowAdminPrompt(true)} className="rounded-2xl border border-white/10 px-4 py-6 text-center transition hover:bg-white/5 focus-visible:outline-2 focus-visible:outline-white/60">
+            <button type="button" onClick={() => setShowAdminPrompt(true)} className="entry-choice">
               <span className="block text-base font-medium">Admin</span>
               <span className="mt-1 block text-xs text-gray-500">API key</span>
             </button>
@@ -157,14 +158,14 @@ function Dashboard({ isGuest, initialApiKey, onExit }) {
           </p>
         </div>
 
-        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-white/10 bg-white/5 p-4 text-sm">
-          <p className="text-gray-400">{isGuest ? "Guest mode · Your changes are temporary and clear when you leave or reload." : "Admin mode · Your measurements are saved."}</p>
-          <button type="button" onClick={onExit} className="shrink-0 rounded-full bg-white/10 px-4 py-2 text-white transition hover:bg-white/20">{isGuest ? "Exit guest mode" : "Sign out"}</button>
+        <div className="surface-panel flex flex-wrap items-center justify-between gap-3 p-4 text-sm">
+          <p className="text-gray-400">{isGuest ? "Guest mode · Changes aren’t saved." : "Admin mode · Measurements are saved."}</p>
+          <button type="button" onClick={onExit} className="button-secondary shrink-0">{isGuest ? "Exit guest mode" : "Sign out"}</button>
         </div>
 
-        {(error || actionError) && <div role="alert" className="rounded-xl border border-red-500/20 bg-red-500/10 p-4 text-sm text-red-300">
+        {(error || actionError) && <div role="alert" className="alert-error p-4 text-sm">
           <p>{actionError || error}</p>
-          {error && <button type="button" onClick={fetchData} className="mt-2 underline">Retry loading measurements</button>}
+          {error && <button type="button" onClick={fetchData} className="button-secondary mt-3">Retry loading measurements</button>}
         </div>}
         {/* Content */}
         {isLoading ? (
@@ -199,7 +200,7 @@ function Dashboard({ isGuest, initialApiKey, onExit }) {
             <div className="flex flex-wrap gap-3">
               <button
                 onClick={handleAddMeasurement}
-                className="flex w-full items-center justify-center gap-2 rounded-full bg-white/10 px-4 py-3 text-sm font-medium tracking-wide text-white transition-colors duration-200 hover:bg-white/20 active:bg-white/25 sm:w-auto sm:px-6 sm:py-2.5 sm:text-base"
+                className="button-primary w-full sm:w-auto"
               >
                 <span>+</span>
                 <span>Add Measurement</span>
@@ -208,20 +209,18 @@ function Dashboard({ isGuest, initialApiKey, onExit }) {
                 setGuestMeasurements(createGuestSamples());
                 setActionError("");
                 setActiveTab("chart");
-              }} className="w-full rounded-full bg-blue-500 px-5 py-3 text-sm font-medium text-white transition hover:bg-blue-600 sm:w-auto sm:py-2.5 sm:text-base">
+              }} className="button-secondary w-full sm:w-auto">
                 {guestMeasurements.length === 0 ? "Fill with sample data" : "Reset to sample data"}
               </button>}
             </div>
 
             {/* Tabs */}
-            <div className="flex gap-4 sm:gap-6 border-b border-white/10 mb-4 sm:mb-6 overflow-x-auto">
+            <div className="flex gap-4 sm:gap-6 border-b border-white/10 overflow-x-auto">
               <button
                 onClick={() => setActiveTab("chart")}
-                className={`pb-2 text-sm font-medium transition-colors duration-200 whitespace-nowrap ${
-                  activeTab === "chart"
-                    ? "text-white border-b-2 border-blue-500"
-                    : "text-gray-400 hover:text-white"
-                }`}
+                data-active={activeTab === "chart"}
+                aria-pressed={activeTab === "chart"}
+                className="tab-button"
               >
                 <span className="flex items-center gap-2">
                   <svg
@@ -237,11 +236,9 @@ function Dashboard({ isGuest, initialApiKey, onExit }) {
               </button>
               <button
                 onClick={() => setActiveTab("history")}
-                className={`pb-2 text-sm font-medium transition-colors duration-200 whitespace-nowrap ${
-                  activeTab === "history"
-                    ? "text-white border-b-2 border-blue-500"
-                    : "text-gray-400 hover:text-white"
-                }`}
+                data-active={activeTab === "history"}
+                aria-pressed={activeTab === "history"}
+                className="tab-button"
               >
                 <span className="flex items-center gap-2">
                   <svg
@@ -262,7 +259,7 @@ function Dashboard({ isGuest, initialApiKey, onExit }) {
             </div>
 
             {/* Tab Content */}
-            <div className="bg-black backdrop-blur-xl rounded-2xl p-4 sm:p-6 border border-white/10">
+            <div className="surface-panel p-4 sm:p-6">
               {activeTab === "chart" ? (
                 <div>
                   <h2 className="font-display text-lg sm:text-xl font-semibold mb-2 text-white tracking-tight">
@@ -309,14 +306,15 @@ function Dashboard({ isGuest, initialApiKey, onExit }) {
 
       {/* Delete Confirmation Modal */}
       {showDeleteConfirm && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-md flex items-center justify-center p-4 z-50">
-          <div className="w-full max-w-md rounded-2xl border border-white/10 bg-white/5 p-5 backdrop-blur-xl sm:p-6">
-            <h2 className="font-display mb-3 text-xl font-semibold text-white">
+        <Modal titleId="delete-measurement-title" onClose={() => {
+          setShowDeleteConfirm(false);
+          setMeasurementToDelete(null);
+        }} className="p-5 sm:p-6">
+            <h2 id="delete-measurement-title" className="font-display mb-3 text-xl font-semibold tracking-tight text-white">
               Delete Measurement
             </h2>
-            <p className="mb-6 text-sm text-gray-400 sm:text-base">
-              Are you sure you want to delete this measurement? This action
-              cannot be undone.
+            <p className="mb-6 text-sm leading-relaxed text-gray-400">
+              This measurement will be permanently removed.
             </p>
             <div className="flex gap-3">
               <button
@@ -324,20 +322,19 @@ function Dashboard({ isGuest, initialApiKey, onExit }) {
                   setShowDeleteConfirm(false);
                   setMeasurementToDelete(null);
                 }}
-                className="flex-1 rounded-full bg-white/10 px-5 py-3 text-sm font-medium tracking-wide text-white/90 transition-colors duration-200 hover:bg-white/20 sm:flex-none sm:px-6 sm:py-2.5"
+                className="button-secondary flex-1"
               >
                 Cancel
               </button>
               <button
                 onClick={handleDeleteClick}
                 disabled={isDeleting}
-                className="flex-1 rounded-full bg-red-500 px-5 py-3 text-sm font-medium tracking-wide text-white transition-colors duration-200 hover:bg-red-600 sm:flex-none sm:px-6 sm:py-2.5"
+                className="button-primary flex-1"
               >
                 Delete
               </button>
             </div>
-          </div>
-        </div>
+        </Modal>
       )}
 
       {/* API Key Prompt */}

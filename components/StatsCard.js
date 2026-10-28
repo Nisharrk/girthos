@@ -8,14 +8,11 @@ export default function StatsCard({ title, value, previousValue, unit }) {
   const change = Math.abs(difference) < 0.1 ? null : {
     value: Math.abs(difference).toFixed(1),
     isPositive: difference > 0,
-    isNegative: difference < 0,
   };
 
   return (
-    <div className="group relative overflow-hidden rounded-2xl border border-white/10 bg-white/5 p-4 backdrop-blur-xl transition-all duration-300 hover:bg-white/10 sm:p-6">
-      <div className="absolute inset-0 bg-gradient-to-br from-white/[0.05] to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
-
-      <div className="relative z-10 min-w-0">
+    <div className="surface-panel p-4 sm:p-6">
+      <div className="min-w-0">
         <h3 className="mb-1.5 text-[11px] font-medium leading-tight tracking-wide text-gray-400 sm:mb-3 sm:text-sm">
           {title}
         </h3>
@@ -24,7 +21,7 @@ export default function StatsCard({ title, value, previousValue, unit }) {
             {formatMeasurement(value, unit)}
           </span>
           {change && (
-            <span className={`text-xs font-medium sm:text-sm ${change.isPositive ? 'text-green-400' : change.isNegative ? 'text-red-400' : 'text-gray-400'}`}>
+            <span className="text-xs font-medium text-gray-400 sm:text-sm">
               {change.isPositive ? '↑' : '↓'} {change.value} {unit}
             </span>
           )}

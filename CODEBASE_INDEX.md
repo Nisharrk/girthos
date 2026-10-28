@@ -25,6 +25,12 @@ Girthos is a small Next.js 15 App Router application for recording and viewing b
 - `components/MeasurementForm.js` — measurement entry/edit dialog; remembers height in local storage.
 - `components/ApiKeyPrompt.js` — collects the API key before dashboard write actions.
 - `components/LoadingSkeleton.js` — dashboard loading placeholder.
+- `components/Modal.js` — shared dialog and mobile sheet with focus containment, Escape dismissal, focus restoration, and background scroll locking.
+
+### Visual system
+
+- `lib/theme.mjs` defines the shared `#BC0202` accent and muted chart palette; `app/layout.js` exposes the accent as a CSS custom property.
+- `app/globals.css` defines matte surfaces, focus/error states, and shared buttons. Primary actions use the Guest entry button’s faint red tint and border; secondary actions use the Admin entry button’s neutral outline. Graph colors remain distinguishable without introducing additional brand accents.
 
 ### Data and styling
 
